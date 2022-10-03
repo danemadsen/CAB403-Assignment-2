@@ -1,3 +1,54 @@
+/*
+                             888888888               888888888     
+                           88:::::::::88           88:::::::::88   
+                         88:::::::::::::88       88:::::::::::::88 
+                        8::::::88888::::::8     8::::::88888::::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                         8:::::88888:::::8       8:::::88888:::::8 
+                          8:::::::::::::8         8:::::::::::::8  
+                         8:::::88888:::::8       8:::::88888:::::8 
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8::::::88888::::::8     8::::::88888::::::8
+                         88:::::::::::::88       88:::::::::::::88 
+                           88:::::::::88           88:::::::::88   
+                             888888888               888888888   
+
+------------------------------------------------------------------------------------------
+                                    CAB403 Assignment 2
+------------------------------------------------------------------------------------------
+
+Group: 88
+Team Member: Dane Madsen
+Student ID: n10983864
+Student Email: n10983864@qut.edu.au
+
+The roles of the simulator:
+● Simulate cars:
+    ○ A simulated car receives a random license plate (sometimes on the list,
+    sometimes not) and queues up at a random entrance to the car park,
+    triggering an LPR when it reaches the front of the queue.
+
+    ○ After triggering the LPR, the simulated car will watch the digital sign. If the
+    sign contains a number, it will keep note of that number (the level where the
+    car has been instructed to park) and then wait for the boom gate to open. If
+    the sign contains any other character, the simulated car will just leave the
+    queue and drive off, disappearing from the simulation.
+
+    ○ After the boom gate opens, the car will drive to the level it was instructed to
+    drive to, triggering the level LPR in the process.
+
+    ○ The car will then park for a random amount of time.
+
+    ○ After the car has finished parking, it will leave, setting off the level LPR again.
+    It will then drive towards a random exit. Upon reaching that exit, it will set off
+    the exit LPR and wait for the boom gate to open. Once the boom gate is
+    open, it will leave the car park and disappear from the simulation.
+*/
+
+// Language: c
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -103,11 +154,11 @@ void get_random_plate(char* plate) {
     }
 };
 
-char get_display(int entry) {
-    pthread_mutex_lock(&Parking->entrances[entry].information_sign.mlock);
-    pthread_cond_wait(&Parking->entrances[entry].information_sign.condition, &Parking->entrances[entry].information_sign.mlock);
-    char display = Parking->entrances[entry].information_sign.display;
-    pthread_mutex_unlock(&Parking->entrances[entry].information_sign.mlock);
+char get_display(struct InformationSign sign) {
+    pthread_mutex_lock(&sign.mlock);
+    pthread_cond_wait(&sign.condition, &sign.mlock);
+    char display = sign.display;
+    pthread_mutex_unlock(&sign.mlock);
     return display;
 };
 
@@ -195,12 +246,27 @@ void close_boom_gate(struct BoomGate *boom_gate) {
 void send_to_random_entrance(struct Car Auto) {
     srand(time(NULL));
     int random_entrance = rand() % ENTRANCES;
+    pthread_mutex_lock(&entrance_queue_lock);
     for (int i = 0; i < ENTRANCES; i++) {
         if (entrance_queue[random_entrance][i].plate == NULL) {
             entrance_queue[random_entrance][i] = Auto;
             break;
         }
     }
+    pthread_mutex_unlock(&entrance_queue_lock);
+};
+
+void send_to_random_exit(struct Car Auto) {
+    srand(time(NULL));
+    int random_exit = rand() % EXITS;
+    pthread_mutex_lock(&exit_queue_lock);
+    for (int i = 0; i < EXITS; i++) {
+        if (exit_queue[random_exit][i].plate == NULL) {
+            exit_queue[random_exit][i] = Auto;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&exit_queue_lock);
 };
 
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
@@ -218,7 +284,7 @@ void enter_car(int entry) {
     // send the plate to the LPR
     send_plate(Auto.plate, &Parking->entrances[entry].LPR);
     // wait for a digital sign signal before proceeding
-    Auto.level = get_display(entry);
+    Auto.level = get_display(Parking->entrances[entry].information_sign);
     // check if Auto.level is an approved char
     if (Auto.level < '1' || Auto.level > '5') return;
     open_boom_gate(&Parking->entrances[entry].boom_gate);
@@ -231,4 +297,21 @@ void enter_car(int entry) {
     Auto.departure_time = Auto.arrival_time + (rand() % 9901 + 100);
     close_boom_gate(&Parking->entrances[entry].boom_gate);
     add_car(Auto);
+};
+
+void exit_car(int ext) {
+    struct Car Auto;
+    get_next_car(&Auto);
+    // wait 2ms
+    usleep(2000);
+    // send the plate to the LPR
+    srand(time(NULL));
+    int random_exit = rand() % EXITS;
+    send_plate(Auto.plate, &Parking->exits[random_exit].LPR); // Here Dick head 8===========================================================================D
+    // check if Auto.level is an approved char
+    open_boom_gate(&Parking->exits[ext].boom_gate);
+    // wait 10ms
+    usleep(10000);
+    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
+    close_boom_gate(&Parking->exits[ext].boom_gate);
 };

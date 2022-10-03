@@ -17,6 +17,10 @@ struct Car entrance_queue[ENTRANCES][LEVEL_CAPACITY];
 pthread_mutex_t entrance_queue_lock;
 pthread_cond_t entrance_queue_condition;
 
+struct Car exit_queue[EXITS][LEVEL_CAPACITY];
+pthread_mutex_t exit_queue_lock;
+pthread_cond_t exit_queue_condition;
+
 struct Car parked_cars[LEVELS*LEVEL_CAPACITY];
 pthread_mutex_t parked_cars_mlock;
 pthread_cond_t parked_cars_condition;
