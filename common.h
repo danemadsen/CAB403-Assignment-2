@@ -19,7 +19,7 @@ struct Car{
     char plate[6];
     int arrival_time;
     int departure_time;
-    int level;
+    char level;
 };
 
 struct LicencePlateRecognition{

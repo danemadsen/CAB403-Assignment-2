@@ -46,42 +46,57 @@ void new_car() {
     send_to_random_entrance(Auto);
 };
 
+void generate_plate(char *plate) {
+    srand(time(NULL));
+    for (int i = 0; i < 3; i++) {
+        plate[i] = (char) (rand() % 10 + '0');
+    }
+    // for the last 3 characters, generate a random capital letter
+    for (int i = 3; i < 6; i++) {
+        plate[i] = rand() % 26 + 65;
+    }
+};
+
+void get_random_plate_from_file(char *plate) {
+    srand(time(NULL));
+    // open the file
+    FILE* file = fopen("plates.txt", "r");
+    // get the number of lines in the file
+    int lines = 0;
+    char c;
+    while ((c = fgetc(file)) != EOF) {
+        if (c == '\n') {
+            lines++;
+        }
+    }
+    // pick a random line
+    int line = rand() % lines;
+    // go to the start of the file
+    rewind(file);
+    // go to the start of the random line
+    for (int i = 0; i < line; i++) {
+        fgets(plate, 7, file);
+    }
+    // close the file
+    fclose(file);
+};
+
 void get_random_plate(char* plate) {
     srand(time(NULL));
     if (rand() % 2 == 0) {
-        srand(time(NULL));
-        for (int i = 0; i < 3; i++) {
-            plate[i] = (char) (rand() % 10 + '0');
-        }
-        // for the last 3 characters, generate a random capital letter
-        for (int i = 3; i < 6; i++) {
-            plate[i] = rand() % 26 + 65;
-        }
+        generate_plate(plate);
     }
     else {
-        srand(time(NULL));
-        // open the file
-        FILE* file = fopen("plates.txt", "r");
-        // get the number of lines in the file
-        int lines = 0;
-        char c;
-        while ((c = fgetc(file)) != EOF) {
-            if (c == '\n') {
-                lines++;
-            }
-        }
-        // pick a random line
-        int line = rand() % lines;
-        // go to the start of the file
-        rewind(file);
-        // go to the start of the random line
-        for (int i = 0; i < line; i++) {
-            fgets(plate, 7, file);
-        }
-        // close the file
-        fclose(file);
+        get_random_plate_from_file(plate);
     }
-    
+};
+
+char get_display(int entry) {
+    pthread_mutex_lock(&Parking->entrances[entry].information_sign.mlock);
+    pthread_cond_wait(&Parking->entrances[entry].information_sign.condition, &Parking->entrances[entry].information_sign.mlock);
+    char display = Parking->entrances[entry].information_sign.display;
+    pthread_mutex_unlock(&Parking->entrances[entry].information_sign.mlock);
+    return display;
 };
 
 void send_to_random_entrance(struct Car Auto) {
@@ -105,7 +120,8 @@ void send_plate(char plate[6], int entry) {
 void send_car(int entry) {
     // read the plate
     char plate[6];
-    strcpy(plate, entrance_queue[entry][0].plate);
+    struct Car Auto = entrance_queue[entry][0];
+    strcpy(plate, Auto.plate);
     // move the queue forward
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
         if (entrance_queue[entry][i].plate == NULL) {
@@ -117,8 +133,6 @@ void send_car(int entry) {
     }
     // send the plate to the LPR
     send_plate(plate, entry);
-    // wait for digital sign condition to be signalled and then lock the mutex
-    pthread_mutex_lock(&Parking->entrances[entry].information_sign.mlock);
-    pthread_cond_wait(&Parking->entrances[entry].information_sign.condition, &Parking->entrances[entry].information_sign.mlock);
-
+    // wait for a digital sign signal before proceeding
+    Auto.level = get_display(entry);
 };
