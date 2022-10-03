@@ -14,12 +14,12 @@ int shm_fd;
 struct CarPark* Parking;
 
 struct Car entrance_queue[ENTRANCES][LEVEL_CAPACITY];
-pthread_mutex_t entrance_queue_lock;
-pthread_cond_t entrance_queue_condition;
+pthread_mutex_t entrance_queue_lock[ENTRANCES];
+pthread_cond_t entrance_queue_condition[ENTRANCES];
 
 struct Car exit_queue[EXITS][LEVEL_CAPACITY];
-pthread_mutex_t exit_queue_lock;
-pthread_cond_t exit_queue_condition;
+pthread_mutex_t exit_queue_lock[EXITS];
+pthread_cond_t exit_queue_condition[EXITS];
 
 struct Car parked_cars[LEVELS*LEVEL_CAPACITY];
 pthread_mutex_t parked_cars_mlock;

@@ -83,6 +83,8 @@ int main() {
 
     // Initialize the mutexes and conditions
     for (int i = 0; i < ENTRANCES; i++) {
+        pthread_mutex_init(&entrance_queue_lock[i], NULL);
+        pthread_cond_init(&entrance_queue_condition[i], NULL);
         pthread_mutex_init(&Parking->entrances[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->entrances[i].LPR.condition, NULL);
         pthread_mutex_init(&Parking->entrances[i].boom_gate.mlock, NULL);
@@ -91,6 +93,8 @@ int main() {
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
     }
     for (int i = 0; i < EXITS; i++) {
+        pthread_mutex_init(&exit_queue_lock[i], NULL);
+        pthread_cond_init(&exit_queue_condition[i], NULL);
         pthread_mutex_init(&Parking->exits[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
@@ -100,11 +104,9 @@ int main() {
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
-    pthread_mutex_init(&entrance_queue_lock, NULL);
-    pthread_cond_init(&entrance_queue_condition, NULL);
     pthread_mutex_init(&parked_cars_mlock, NULL);
     pthread_cond_init(&parked_cars_condition, NULL);
-    
+
     // Initialise the boom_gates to have the status 'C'
     for (int i = 0; i < ENTRANCES; i++) {
         Parking->entrances[i].boom_gate.status = 'C';
@@ -112,7 +114,7 @@ int main() {
     for (int i = 0; i < EXITS; i++) {
         Parking->exits[i].boom_gate.status = 'C';
     }
-
+    
     return 0;
 };
 
@@ -198,21 +200,7 @@ void add_car(struct Car Auto){
             break;
         }
     }
-    pthread_mutex_unlock(&parked_cars_mlock);
-};
-
-// sort cars in parked_cars by lowest to highest departure_time
-void sort_parked_cars() {
-    pthread_mutex_lock(&parked_cars_mlock);
-    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-        for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
-            if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
-                struct Car temp = parked_cars[i];
-                parked_cars[i] = parked_cars[j];
-                parked_cars[j] = temp;
-            }
-        }
-    }
+    pthread_cond_signal(&parked_cars_condition);
     pthread_mutex_unlock(&parked_cars_mlock);
 };
 
@@ -259,27 +247,29 @@ void close_boom_gate(struct BoomGate *boom_gate) {
 void send_to_random_entrance(struct Car Auto) {
     srand(time(NULL));
     int random_entrance = rand() % ENTRANCES;
-    pthread_mutex_lock(&entrance_queue_lock);
+    pthread_mutex_lock(&entrance_queue_lock[random_entrance]);
     for (int i = 0; i < ENTRANCES; i++) {
         if (entrance_queue[random_entrance][i].plate == NULL) {
             entrance_queue[random_entrance][i] = Auto;
             break;
         }
     }
-    pthread_mutex_unlock(&entrance_queue_lock);
+    pthread_cond_signal(&entrance_queue_condition[random_entrance]);
+    pthread_mutex_unlock(&entrance_queue_lock[random_entrance]);
 };
 
 void send_to_random_exit(struct Car Auto) {
     srand(time(NULL));
     int random_exit = rand() % EXITS;
-    pthread_mutex_lock(&exit_queue_lock);
+    pthread_mutex_lock(&exit_queue_lock[random_exit]);
     for (int i = 0; i < EXITS; i++) {
         if (exit_queue[random_exit][i].plate == NULL) {
             exit_queue[random_exit][i] = Auto;
             break;
         }
     }
-    pthread_mutex_unlock(&exit_queue_lock);
+    pthread_cond_signal(&exit_queue_condition[random_exit]);
+    pthread_mutex_unlock(&exit_queue_lock[random_exit]);
 };
 
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
@@ -312,19 +302,65 @@ void enter_car(int entry) {
     add_car(Auto);
 };
 
-void exit_car(int ext) {
+void void exit_car(int ext) {
     struct Car Auto;
     get_next_car(&Auto);
-    // wait 2ms
-    usleep(2000);
+    if (Auto.plate == NULL) return;
+    // wait 10ms
+    usleep(10000);
     // send the plate to the LPR
     srand(time(NULL));
     int random_exit = rand() % EXITS;
-    send_plate(Auto.plate, &Parking->exits[random_exit].LPR); // Here Dick head 8===========================================================================D
-    // check if Auto.level is an approved char
+    send_plate(Auto.plate, &Parking->exits[random_exit].LPR);
     open_boom_gate(&Parking->exits[ext].boom_gate);
-    // wait 10ms
-    usleep(10000);
-    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
     close_boom_gate(&Parking->exits[ext].boom_gate);
+};
+
+void car_generator_loop() {
+    while (1) {
+        srand(time(NULL));
+        // wait 1-100ms
+        usleep((rand() % 100000) + 1000);
+        // create a new car
+        new_car();
+    }
+};
+
+void entrance_loop(int entry) {
+    while (1) {
+        pthread_mutex_lock(&entrance_queue_lock[entry]);
+        while (entrance_queue[entry][0].plate == NULL) {
+            pthread_cond_wait(&entrance_queue_condition[entry], &entrance_queue_lock[entry]);
+        }
+        pthread_mutex_unlock(&entrance_queue_lock[entry]);
+        enter_car(entry);
+    }
+};
+
+void exit_loop(int ext) {
+    while (1) {
+        pthread_mutex_lock(&exit_queue_lock[ext]);
+        while (exit_queue[ext][0].plate == NULL) {
+            pthread_cond_wait(&exit_queue_condition[ext], &exit_queue_lock[ext]);
+        }
+        pthread_mutex_unlock(&exit_queue_lock[ext]);
+        exit_car(ext);
+    }
+};
+
+void car_sorter_loop() {
+    while (1) {
+        pthread_mutex_lock(&parked_cars_mlock);
+        pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
+        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+            for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
+                if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
+                    struct Car temp = parked_cars[i];
+                    parked_cars[i] = parked_cars[j];
+                    parked_cars[j] = temp;
+                }
+            }
+        }
+        pthread_mutex_unlock(&parked_cars_mlock);
+    }
 };
