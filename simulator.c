@@ -177,8 +177,8 @@ char get_display(struct InformationSign sign) {
     return display;
 };
 
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY]) {
-    pthread_mutex_lock(&entrance_queue_lock);
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
+    pthread_mutex_lock(&entrance_queue_lock[entry]);
     struct Car Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
         if (Queue[i].plate == NULL) {
@@ -188,7 +188,7 @@ struct Car move_queue(struct Car Queue[LEVEL_CAPACITY]) {
             Queue[i - 1] = Queue[i];
         }
     }
-    pthread_mutex_unlock(&entrance_queue_lock);
+    pthread_mutex_unlock(&entrance_queue_lock[entry]);
     return Auto;
 };
 
@@ -281,7 +281,7 @@ void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
 
 void enter_car(int entry) {
     // Get the first car in the queue
-    struct Car Auto = move_queue(entrance_queue[entry]);
+    struct Car Auto = move_queue(entrance_queue[entry], entry);
     // wait 2ms
     usleep(2000);
     // send the plate to the LPR
@@ -302,7 +302,7 @@ void enter_car(int entry) {
     add_car(Auto);
 };
 
-void void exit_car(int ext) {
+void exit_car(int ext) {
     struct Car Auto;
     get_next_car(&Auto);
     if (Auto.plate == NULL) return;
