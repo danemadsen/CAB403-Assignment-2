@@ -1,3 +1,54 @@
+/*
+                             888888888               888888888     
+                           88:::::::::88           88:::::::::88   
+                         88:::::::::::::88       88:::::::::::::88 
+                        8::::::88888::::::8     8::::::88888::::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                         8:::::88888:::::8       8:::::88888:::::8 
+                          8:::::::::::::8         8:::::::::::::8  
+                         8:::::88888:::::8       8:::::88888:::::8 
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8:::::8     8:::::8     8:::::8     8:::::8
+                        8::::::88888::::::8     8::::::88888::::::8
+                         88:::::::::::::88       88:::::::::::::88 
+                           88:::::::::88           88:::::::::88   
+                             888888888               888888888   
+
+------------------------------------------------------------------------------------------
+                            CAB403 Assignment 2 - Manager
+------------------------------------------------------------------------------------------
+
+Group: 88
+Team Member: Dane Madsen
+Student ID: n10983864
+Student Email: n10983864@qut.edu.au
+
+The roles of the manager:
+● Monitor the status of the LPR sensors and keep track of where each car is in the car
+park
+
+● Tell the boom gates when to open and when to close (the boom gates are a simple
+piece of hardware that can only be told to open or close, so the job of automatically
+closing the boom gates after they have been open for a little while is up to the
+manager)
+
+● Control what is displayed on the information signs at each entrance
+
+● As the manager knows where each car is, it is the manager’s job to ensure that there
+is room in the car park before allowing new vehicles in (number of cars < number of
+levels * the number of cars per level). The manager also needs to keep track of how
+full the individual levels are and direct new cars to a level that is not fully occupied
+
+● Keep track of how long each car has been in the parking lot and produce a bill once
+the car leaves.
+
+● Display the current status of the parking lot on a frequently-updating screen, showing
+how full each level is, the current status of the boom gates, signs, temperature
+sensors and alarms, as well as how much revenue the car park has brought in so far.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

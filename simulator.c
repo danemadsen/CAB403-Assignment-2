@@ -17,7 +17,7 @@
                              888888888               888888888   
 
 ------------------------------------------------------------------------------------------
-                                    CAB403 Assignment 2
+                            CAB403 Assignment 2 - Simulator
 ------------------------------------------------------------------------------------------
 
 Group: 88
@@ -46,6 +46,19 @@ The roles of the simulator:
     It will then drive towards a random exit. Upon reaching that exit, it will set off
     the exit LPR and wait for the boom gate to open. Once the boom gate is
     open, it will leave the car park and disappear from the simulation.
+
+● Simulate boom gates:
+    ○ Boom gates take a certain amount of time to open and close. Once the
+    manager has instructed a closed boom gate to open or an open boom gate to
+    close, the simulator’s job is to wait for a small amount of time before putting
+    the boom gate into the open/closed state.
+
+● Simulate temperature:
+    ○ Each level of the car park has a temperature sensor, sending back the current
+    temperature (in degrees celsius). The simulator will frequently update these
+    values with reasonable random values. The simulator should also be able to
+    simulate a fire by generating higher values, in order to test / demonstrate the
+    fire alarm system.
 */
 
 // Language: c
