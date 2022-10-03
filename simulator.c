@@ -107,15 +107,17 @@ char get_display(int entry) {
     return display;
 };
 
-void move_queue(int entry) {
+struct Car* move_queue(struct Car *Queue[LEVEL_CAPACITY]) {
+    struct Car *Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
-        if (entrance_queue[entry][i].plate == NULL) {
+        if (Queue[i]->plate == NULL) {
             break;
         }
         else {
-            entrance_queue[entry][i - 1] = entrance_queue[entry][i];
+            Queue[i - 1] = Queue[i];
         }
     }
+    return Auto;
 };
 
 void add_car(struct Car Auto){
@@ -130,17 +132,27 @@ void add_car(struct Car Auto){
     pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-void cycle_boom_gate(struct BoomGate *boom_gate) {
+void open_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'R') {
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
+    // wait 10ms
+    usleep(10000);
     boom_gate->status = 'O';
     pthread_cond_signal(&boom_gate->condition);
+    pthread_mutex_unlock(&boom_gate->mlock);
+};
+
+void close_boom_gate(struct BoomGate *boom_gate) {
+    pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'L') {
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
+    // wait 10ms
+    usleep(10000);
     boom_gate->status = 'C';
+    pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
 };
 
@@ -163,17 +175,24 @@ void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
 };
 
 void enter_car(int entry) {
-    // read the plate
-    struct Car Auto = entrance_queue[entry][0];
-    // move the queue forward
-    move_queue(entry);
+    // Get the first car in the queue
+    struct Car *Auto = move_queue(entrance_queue[entry]);
+    // wait 2ms
+    usleep(2000);
     // send the plate to the LPR
-    send_plate(Auto.plate, &Parking->entrances[entry].LPR);
+    send_plate(Auto->plate, &Parking->entrances[entry].LPR);
     // wait for a digital sign signal before proceeding
-    Auto.level = get_display(entry);
+    Auto->level = get_display(entry);
     // check if Auto.level is an approved char
-    if (Auto.level < '1' || Auto.level > '5') return;
-    cycle_boom_gate(&Parking->entrances[entry].boom_gate);
-    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
-    
+    if (Auto->level < '1' || Auto->level > '5') return;
+    open_boom_gate(&Parking->entrances[entry].boom_gate);
+    // Log the time in unix millis to the car arrival_time
+    Auto->arrival_time = get_time();
+    // wait 10ms
+    usleep(10000);
+    send_plate(Auto->plate, &Parking->levels[((int) Auto->level) - 1].LPR);
+    srand(time(NULL));
+    Auto->departure_time = Auto->arrival_time + (rand() % 9901 + 100);
+    close_boom_gate(&Parking->entrances[entry].boom_gate);
+    add_car(*Auto);
 };
