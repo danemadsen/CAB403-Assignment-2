@@ -111,11 +111,11 @@ char get_display(int entry) {
     return display;
 };
 
-struct Car* move_queue(struct Car *Queue[LEVEL_CAPACITY]) {
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY]) {
     pthread_mutex_lock(&entrance_queue_lock);
-    struct Car *Auto = Queue[0];
+    struct Car Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
-        if (Queue[i]->plate == NULL) {
+        if (Queue[i].plate == NULL) {
             break;
         }
         else {
@@ -159,11 +159,11 @@ void get_next_car(struct Car *Auto) {
         i++;
     }
     *Auto = parked_cars[i];
-    if(((int) &Auto->departure_time) < ((int) time(NULL))) {
-        *parked_cars[i].plate = NULL;
+    if(Auto->departure_time < ((intptr_t) time(NULL))) {
+        *parked_cars[i].plate = '\0';
     }
     else {
-        *Auto->plate = NULL;
+        *Auto->plate = '\0';
     }
     pthread_mutex_unlock(&parked_cars_mlock);
 };
@@ -212,23 +212,23 @@ void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
 
 void enter_car(int entry) {
     // Get the first car in the queue
-    struct Car *Auto = move_queue(entrance_queue[entry]);
+    struct Car Auto = move_queue(entrance_queue[entry]);
     // wait 2ms
     usleep(2000);
     // send the plate to the LPR
-    send_plate(Auto->plate, &Parking->entrances[entry].LPR);
+    send_plate(Auto.plate, &Parking->entrances[entry].LPR);
     // wait for a digital sign signal before proceeding
-    Auto->level = get_display(entry);
+    Auto.level = get_display(entry);
     // check if Auto.level is an approved char
-    if (Auto->level < '1' || Auto->level > '5') return;
+    if (Auto.level < '1' || Auto.level > '5') return;
     open_boom_gate(&Parking->entrances[entry].boom_gate);
     // Log the time in unix millis to the car arrival_time
-    Auto->arrival_time = (int) time(NULL);
+    Auto.arrival_time = (int) time(NULL);
     // wait 10ms
     usleep(10000);
-    send_plate(Auto->plate, &Parking->levels[((int) Auto->level) - 1].LPR);
+    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
     srand(time(NULL));
-    Auto->departure_time = Auto->arrival_time + (rand() % 9901 + 100);
+    Auto.departure_time = Auto.arrival_time + (rand() % 9901 + 100);
     close_boom_gate(&Parking->entrances[entry].boom_gate);
-    add_car(*Auto);
+    add_car(Auto);
 };
