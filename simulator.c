@@ -36,6 +36,10 @@ int main() {
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
+    pthread_mutex_init(&entrance_queue_lock, NULL);
+    pthread_cond_init(&entrance_queue_condition, NULL);
+    pthread_mutex_init(&parked_cars_mlock, NULL);
+    pthread_cond_init(&parked_cars_condition, NULL);
     
     // Initialise the boom_gates to have the status 'C'
     for (int i = 0; i < ENTRANCES; i++) {
@@ -108,6 +112,7 @@ char get_display(int entry) {
 };
 
 struct Car* move_queue(struct Car *Queue[LEVEL_CAPACITY]) {
+    pthread_mutex_lock(&entrance_queue_lock);
     struct Car *Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
         if (Queue[i]->plate == NULL) {
@@ -117,6 +122,7 @@ struct Car* move_queue(struct Car *Queue[LEVEL_CAPACITY]) {
             Queue[i - 1] = Queue[i];
         }
     }
+    pthread_mutex_unlock(&entrance_queue_lock);
     return Auto;
 };
 
@@ -128,7 +134,37 @@ void add_car(struct Car Auto){
             break;
         }
     }
-    pthread_cond_signal(&parked_cars_condition);
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+// sort cars in parked_cars by lowest to highest departure_time
+void sort_parked_cars() {
+    pthread_mutex_lock(&parked_cars_mlock);
+    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+        for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
+            if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
+                struct Car temp = parked_cars[i];
+                parked_cars[i] = parked_cars[j];
+                parked_cars[j] = temp;
+            }
+        }
+    }
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+void get_next_car(struct Car *Auto) {
+    pthread_mutex_lock(&parked_cars_mlock);
+    int i = 0;
+    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
+        i++;
+    }
+    *Auto = parked_cars[i];
+    if(((int) &Auto->departure_time) < ((int) time(NULL))) {
+        *parked_cars[i].plate = NULL;
+    }
+    else {
+        *Auto->plate = NULL;
+    }
     pthread_mutex_unlock(&parked_cars_mlock);
 };
 
@@ -187,7 +223,7 @@ void enter_car(int entry) {
     if (Auto->level < '1' || Auto->level > '5') return;
     open_boom_gate(&Parking->entrances[entry].boom_gate);
     // Log the time in unix millis to the car arrival_time
-    Auto->arrival_time = get_time();
+    Auto->arrival_time = (int) time(NULL);
     // wait 10ms
     usleep(10000);
     send_plate(Auto->plate, &Parking->levels[((int) Auto->level) - 1].LPR);
