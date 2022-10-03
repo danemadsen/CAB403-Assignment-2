@@ -37,6 +37,14 @@ int main() {
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
     
+    // Initialise the boom_gates to have the status 'C'
+    for (int i = 0; i < ENTRANCES; i++) {
+        Parking->entrances[i].boom_gate.status = 'C';
+    }
+    for (int i = 0; i < EXITS; i++) {
+        Parking->exits[i].boom_gate.status = 'C';
+    }
+
     return 0;
 };
 
@@ -99,6 +107,43 @@ char get_display(int entry) {
     return display;
 };
 
+void move_queue(int entry) {
+    for (int i = 1; i < LEVEL_CAPACITY; i++) {
+        if (entrance_queue[entry][i].plate == NULL) {
+            break;
+        }
+        else {
+            entrance_queue[entry][i - 1] = entrance_queue[entry][i];
+        }
+    }
+};
+
+void add_car(struct Car Auto){
+    pthread_mutex_lock(&parked_cars_mlock);
+    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+        if (parked_cars[i].plate == NULL) {
+            parked_cars[i] = Auto;
+            break;
+        }
+    }
+    pthread_cond_signal(&parked_cars_condition);
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+void cycle_boom_gate(struct BoomGate *boom_gate) {
+    pthread_mutex_lock(&boom_gate->mlock);
+    while (boom_gate->status != 'R') {
+        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+    }
+    boom_gate->status = 'O';
+    pthread_cond_signal(&boom_gate->condition);
+    while (boom_gate->status != 'L') {
+        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+    }
+    boom_gate->status = 'C';
+    pthread_mutex_unlock(&boom_gate->mlock);
+};
+
 void send_to_random_entrance(struct Car Auto) {
     srand(time(NULL));
     int random_entrance = rand() % ENTRANCES;
@@ -110,29 +155,25 @@ void send_to_random_entrance(struct Car Auto) {
     }
 };
 
-void send_plate(char plate[6], int entry) {
-    pthread_mutex_lock(&Parking->entrances[entry].LPR.mlock);
-    strcpy(Parking->entrances[entry].LPR.plate, plate);
-    pthread_cond_signal(&Parking->entrances[entry].LPR.condition);
-    pthread_mutex_unlock(&Parking->entrances[entry].LPR.mlock);
+void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
+    pthread_mutex_lock(&LPR->mlock);
+    strcpy(LPR->plate, plate);
+    pthread_cond_signal(&LPR->condition);
+    pthread_mutex_unlock(&LPR->mlock);
 };
 
-void send_car(int entry) {
+void enter_car(int entry) {
     // read the plate
-    char plate[6];
     struct Car Auto = entrance_queue[entry][0];
-    strcpy(plate, Auto.plate);
     // move the queue forward
-    for (int i = 1; i < LEVEL_CAPACITY; i++) {
-        if (entrance_queue[entry][i].plate == NULL) {
-            break;
-        }
-        else {
-            entrance_queue[entry][i - 1] = entrance_queue[entry][i];
-        }
-    }
+    move_queue(entry);
     // send the plate to the LPR
-    send_plate(plate, entry);
+    send_plate(Auto.plate, &Parking->entrances[entry].LPR);
     // wait for a digital sign signal before proceeding
     Auto.level = get_display(entry);
+    // check if Auto.level is an approved char
+    if (Auto.level < '1' || Auto.level > '5') return;
+    cycle_boom_gate(&Parking->entrances[entry].boom_gate);
+    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
+    
 };
