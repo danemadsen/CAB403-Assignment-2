@@ -47,6 +47,15 @@ the car leaves.
 ● Display the current status of the parking lot on a frequently-updating screen, showing
 how full each level is, the current status of the boom gates, signs, temperature
 sensors and alarms, as well as how much revenue the car park has brought in so far.
+
+Manager timings:
+● After a boom gate has been fully opened, it will start to close 20ms later. Cars
+entering the car park will just drive in if the boom gate is fully open after they have
+been directed to a level (however, if the car arrives just as the boom gate starts to
+close, it will have to wait for the boom gate to fully close, then fully open again.)
+
+● Cars are billed based on how long they spend in the car park (see the Billing section
+for more information.)
 */
 
 #include <stdio.h>
