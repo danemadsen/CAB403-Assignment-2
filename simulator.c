@@ -291,6 +291,12 @@ void send_to_random_exit(struct Car Auto) {
     pthread_mutex_unlock(&exit_queue_lock[random_exit]);
 };
 
+void set_random_temperature(int lvl){
+    srand(time(NULL));
+    int random_temp = rand() % 10 + 20;
+    Parking->levels[lvl].temperature = random_temp;
+};
+
 void *car_generator_loop(void *arg) {
     while (1) {
         srand(time(NULL));
@@ -315,6 +321,16 @@ void *car_sorter_loop(void *arg) {
             }
         }
         pthread_mutex_unlock(&parked_cars_mlock);
+    }
+};
+
+void *temperature_loop(void *arg) {
+    while (1) {
+        // wait 1-5ms
+        usleep((rand() % 5000) + 1000);
+        for (int i = 0; i < LEVELS; i++) {
+            set_random_temperature(i);
+        }
     }
 };
 
@@ -385,6 +401,7 @@ int main(){
     // Initialise threads of loop functions
     pthread_create(&car_generator_loop_thread, NULL, car_generator_loop, NULL);
     pthread_create(&car_sorter_loop_thread, NULL, car_sorter_loop, NULL);
+    pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
     for (int i = 0; i < ENTRANCES; i++) {
         pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
     }

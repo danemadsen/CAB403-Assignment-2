@@ -108,9 +108,10 @@ pthread_mutex_t parked_cars_mlock;
 pthread_cond_t parked_cars_condition;
 
 pthread_t car_generator_loop_thread;
+pthread_t car_sorter_loop_thread;
 pthread_t entrance_loop_thread[ENTRANCES];
 pthread_t exit_loop_threads[EXITS];
-pthread_t car_sorter_loop_thread;
+pthread_t temperature_loop_thread;
 
 void new_car();
 void add_car(struct Car Auto);
@@ -125,12 +126,17 @@ void get_random_plate(char* plate);
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
 
 char get_display(struct InformationSign sign);
+
 void open_boom_gate(struct BoomGate *boom_gate);
 void close_boom_gate(struct BoomGate *boom_gate);
+
 void send_to_random_entrance(struct Car Auto);
 void send_to_random_exit(struct Car Auto);
 
+void set_random_temperature(int lvl);
+
 void *car_generator_loop(void *arg);
 void *car_sorter_loop(void *arg);
+void *temperature_loop(void *arg);
 void *entrance_loop(void *arg);
 void *exit_loop(void *arg);
