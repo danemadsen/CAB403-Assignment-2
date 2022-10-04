@@ -99,6 +99,86 @@ void new_car() {
     send_to_random_entrance(Auto);
 };
 
+void add_car(struct Car Auto){
+    pthread_mutex_lock(&parked_cars_mlock);
+    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+        if (parked_cars[i].plate == NULL) {
+            parked_cars[i] = Auto;
+            break;
+        }
+    }
+    pthread_cond_signal(&parked_cars_condition);
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+void get_next_car(struct Car *Auto) {
+    pthread_mutex_lock(&parked_cars_mlock);
+    int i = 0;
+    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
+        i++;
+    }
+    *Auto = parked_cars[i];
+    if(Auto->departure_time < ((intptr_t) time(NULL))) {
+        *parked_cars[i].plate = '\0';
+    }
+    else {
+        *Auto->plate = '\0';
+    }
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
+    pthread_mutex_lock(&entrance_queue_lock[entry]);
+    struct Car Auto = Queue[0];
+    for (int i = 1; i < LEVEL_CAPACITY; i++) {
+        if (Queue[i].plate == NULL) {
+            break;
+        }
+        else {
+            Queue[i - 1] = Queue[i];
+        }
+    }
+    pthread_mutex_unlock(&entrance_queue_lock[entry]);
+    return Auto;
+};
+
+void enter_car(int entry) {
+    // Get the first car in the queue
+    struct Car Auto = move_queue(entrance_queue[entry], entry);
+    // wait 2ms
+    usleep(2000);
+    // send the plate to the LPR
+    send_plate(Auto.plate, &Parking->entrances[entry].LPR);
+    // wait for a digital sign signal before proceeding
+    Auto.level = get_display(Parking->entrances[entry].information_sign);
+    // check if Auto.level is an approved char
+    if (Auto.level < '1' || Auto.level > '5') return;
+    open_boom_gate(&Parking->entrances[entry].boom_gate);
+    // Log the time in unix millis to the car arrival_time
+    Auto.arrival_time = (int) time(NULL);
+    // wait 10ms
+    usleep(10000);
+    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
+    srand(time(NULL));
+    Auto.departure_time = Auto.arrival_time + (rand() % 9901 + 100);
+    close_boom_gate(&Parking->entrances[entry].boom_gate);
+    add_car(Auto);
+};
+
+void exit_car(int ext) {
+    struct Car Auto;
+    get_next_car(&Auto);
+    if (Auto.plate == NULL) return;
+    // wait 10ms
+    usleep(10000);
+    // send the plate to the LPR
+    srand(time(NULL));
+    int random_exit = rand() % EXITS;
+    send_plate(Auto.plate, &Parking->exits[random_exit].LPR);
+    open_boom_gate(&Parking->exits[ext].boom_gate);
+    close_boom_gate(&Parking->exits[ext].boom_gate);
+};
+
 void generate_plate(char *plate) {
     srand(time(NULL));
     for (int i = 0; i < 3; i++) {
@@ -144,55 +224,19 @@ void get_random_plate(char* plate) {
     }
 };
 
+void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
+    pthread_mutex_lock(&LPR->mlock);
+    strcpy(LPR->plate, plate);
+    pthread_cond_signal(&LPR->condition);
+    pthread_mutex_unlock(&LPR->mlock);
+};
+
 char get_display(struct InformationSign sign) {
     pthread_mutex_lock(&sign.mlock);
     pthread_cond_wait(&sign.condition, &sign.mlock);
     char display = sign.display;
     pthread_mutex_unlock(&sign.mlock);
     return display;
-};
-
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
-    pthread_mutex_lock(&entrance_queue_lock[entry]);
-    struct Car Auto = Queue[0];
-    for (int i = 1; i < LEVEL_CAPACITY; i++) {
-        if (Queue[i].plate == NULL) {
-            break;
-        }
-        else {
-            Queue[i - 1] = Queue[i];
-        }
-    }
-    pthread_mutex_unlock(&entrance_queue_lock[entry]);
-    return Auto;
-};
-
-void add_car(struct Car Auto){
-    pthread_mutex_lock(&parked_cars_mlock);
-    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-        if (parked_cars[i].plate == NULL) {
-            parked_cars[i] = Auto;
-            break;
-        }
-    }
-    pthread_cond_signal(&parked_cars_condition);
-    pthread_mutex_unlock(&parked_cars_mlock);
-};
-
-void get_next_car(struct Car *Auto) {
-    pthread_mutex_lock(&parked_cars_mlock);
-    int i = 0;
-    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
-        i++;
-    }
-    *Auto = parked_cars[i];
-    if(Auto->departure_time < ((intptr_t) time(NULL))) {
-        *parked_cars[i].plate = '\0';
-    }
-    else {
-        *Auto->plate = '\0';
-    }
-    pthread_mutex_unlock(&parked_cars_mlock);
 };
 
 void open_boom_gate(struct BoomGate *boom_gate) {
@@ -245,50 +289,6 @@ void send_to_random_exit(struct Car Auto) {
     }
     pthread_cond_signal(&exit_queue_condition[random_exit]);
     pthread_mutex_unlock(&exit_queue_lock[random_exit]);
-};
-
-void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
-    pthread_mutex_lock(&LPR->mlock);
-    strcpy(LPR->plate, plate);
-    pthread_cond_signal(&LPR->condition);
-    pthread_mutex_unlock(&LPR->mlock);
-};
-
-void enter_car(int entry) {
-    // Get the first car in the queue
-    struct Car Auto = move_queue(entrance_queue[entry], entry);
-    // wait 2ms
-    usleep(2000);
-    // send the plate to the LPR
-    send_plate(Auto.plate, &Parking->entrances[entry].LPR);
-    // wait for a digital sign signal before proceeding
-    Auto.level = get_display(Parking->entrances[entry].information_sign);
-    // check if Auto.level is an approved char
-    if (Auto.level < '1' || Auto.level > '5') return;
-    open_boom_gate(&Parking->entrances[entry].boom_gate);
-    // Log the time in unix millis to the car arrival_time
-    Auto.arrival_time = (int) time(NULL);
-    // wait 10ms
-    usleep(10000);
-    send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
-    srand(time(NULL));
-    Auto.departure_time = Auto.arrival_time + (rand() % 9901 + 100);
-    close_boom_gate(&Parking->entrances[entry].boom_gate);
-    add_car(Auto);
-};
-
-void exit_car(int ext) {
-    struct Car Auto;
-    get_next_car(&Auto);
-    if (Auto.plate == NULL) return;
-    // wait 10ms
-    usleep(10000);
-    // send the plate to the LPR
-    srand(time(NULL));
-    int random_exit = rand() % EXITS;
-    send_plate(Auto.plate, &Parking->exits[random_exit].LPR);
-    open_boom_gate(&Parking->exits[ext].boom_gate);
-    close_boom_gate(&Parking->exits[ext].boom_gate);
 };
 
 void *car_generator_loop(void *arg) {

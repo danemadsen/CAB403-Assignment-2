@@ -113,20 +113,23 @@ pthread_t exit_loop_threads[EXITS];
 pthread_t car_sorter_loop_thread;
 
 void new_car();
+void add_car(struct Car Auto);
+void get_next_car(struct Car *Auto);
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry);
+void enter_car(int entry);
+void exit_car(int ext);
+
 void generate_plate(char* plate);
 void get_random_plate_from_file(char* plate);
 void get_random_plate(char* plate);
+void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
+
 char get_display(struct InformationSign sign);
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry);
-void add_car(struct Car Auto);
-void get_next_car(struct Car *Auto);
 void open_boom_gate(struct BoomGate *boom_gate);
 void close_boom_gate(struct BoomGate *boom_gate);
 void send_to_random_entrance(struct Car Auto);
 void send_to_random_exit(struct Car Auto);
-void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
-void enter_car(int entry);
-void exit_car(int ext);
+
 void *car_generator_loop(void *arg);
 void *car_sorter_loop(void *arg);
 void *entrance_loop(void *arg);
