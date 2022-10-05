@@ -78,6 +78,17 @@ int main() {
   return 0;
 }
 
+void charge_car(struct Car *car) {
+  // Calculate the time the car has been in the car park
+  int time_in_parking_lot = car->departure_time - car->arrival_time;
+  // Calculate the cost of the car's stay
+  double cost = time_in_parking_lot * RATE;
+  //Increment the total revenue
+  pthread_mutex_lock(&revenue_lock);
+  revenue += cost;
+  pthread_mutex_unlock(&revenue_lock);
+};
+
 bool check_plate(char* plate) {
     FILE* file = fopen("plates.txt", "r");
     char c;
@@ -123,4 +134,11 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_unlock(&boom_gate->mlock);
 };
 
+void *LPR_loop(void *arg){
+  // Get the LPR sensor
+  struct LicencePlateRecognition *LPR = (struct LPR *) arg;
+  pthread_mutex_lock(&LPR->mlock);
+  pthread_cond_wait(&LPR->condition, &LPR->mlock);
+  pthread_mutex_unlock(&LPR->mlock);
+}
 
