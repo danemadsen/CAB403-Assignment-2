@@ -72,7 +72,10 @@ for more information.)
 #include "common.h"
 
 int main() {
-    return 0;
+  // Setup the shared memory segement
+  shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
+  Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  return 0;
 }
 
 bool check_plate(char* plate) {

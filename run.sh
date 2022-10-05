@@ -1,0 +1,3 @@
+./simulator
+./manager
+./firealarm

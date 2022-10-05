@@ -72,4 +72,7 @@ for more information.)
 
 #define RATE 0.05
 
+int shm_fd;
+struct CarPark* Parking;
+
 bool check_plate(char *plate);
