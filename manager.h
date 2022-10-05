@@ -74,5 +74,8 @@ for more information.)
 
 int shm_fd;
 struct CarPark* Parking;
+double revenue;
+
+pthread_mutex_t revenue_lock;
 
 bool check_plate(char *plate);
