@@ -292,9 +292,9 @@ void send_to_random_exit(struct Car Auto) {
 };
 
 void set_random_temperature(int lvl){
-    srand(time(NULL));
-    int random_temp = rand() % 10 + 20;
-    Parking->levels[lvl].temperature = random_temp;
+    srand(time(NULL)*(lvl+1));
+    // add a ramdom value between -3 and 3 to the current temperature
+    Parking->levels[lvl].temperature += rand() % 7 - 3;
 };
 
 void *car_generator_loop(void *arg) {
@@ -396,6 +396,11 @@ int main(){
     }
     for (int i = 0; i < EXITS; i++) {
         Parking->exits[i].boom_gate.status = 'C';
+    }
+
+    // Initialise the temperature of each level to be 20
+    for (int i = 0; i < LEVELS; i++) {
+        Parking->levels[i].temperature = 20;
     }
     
     // Initialise threads of loop functions
