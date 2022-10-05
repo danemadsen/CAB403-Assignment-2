@@ -77,7 +77,7 @@ struct CarPark* Parking;
 double revenue;
 
 struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
-int parked_cars_count[LEVELS];
+//int parked_cars_count[LEVELS];
 pthread_mutex_t parked_cars_mlock;
 pthread_cond_t parked_cars_condition;
 

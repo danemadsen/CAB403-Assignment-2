@@ -283,19 +283,19 @@ void send_to_random_entrance(struct Car Auto) {
     pthread_mutex_unlock(&entrance_queue_lock[random_entrance]);
 };
 
-void send_to_random_exit(struct Car Auto) {
-    srand(time(NULL));
-    int random_exit = rand() % EXITS;
-    pthread_mutex_lock(&exit_queue_lock[random_exit]);
-    for (int i = 0; i < EXITS; i++) {
-        if (exit_queue[random_exit][i].plate == NULL) {
-            exit_queue[random_exit][i] = Auto;
-            break;
-        }
-    }
-    pthread_cond_signal(&exit_queue_condition[random_exit]);
-    pthread_mutex_unlock(&exit_queue_lock[random_exit]);
-};
+//void send_to_random_exit(struct Car Auto) {
+//    srand(time(NULL));
+//    int random_exit = rand() % EXITS;
+//    pthread_mutex_lock(&exit_queue_lock[random_exit]);
+//    for (int i = 0; i < EXITS; i++) {
+//        if (exit_queue[random_exit][i].plate == NULL) {
+//            exit_queue[random_exit][i] = Auto;
+//            break;
+//        }
+//    }
+//    pthread_cond_signal(&exit_queue_condition[random_exit]);
+//    pthread_mutex_unlock(&exit_queue_lock[random_exit]);
+//};
 
 void set_random_temperature(int lvl){
     srand(time(NULL)*(lvl+1));

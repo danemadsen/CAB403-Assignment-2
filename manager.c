@@ -97,6 +97,45 @@ bool detect_car(struct LicencePlateRecognition *LPR) {
   return false;
 };
 
+void add_car(struct Car Auto){
+    pthread_mutex_lock(&parked_cars_mlock);
+    for (int i = 0; i < LEVEL_CAPACITY; i++) {
+        if (parked_cars[(int) Auto.level][i].plate == NULL) {
+            parked_cars[(int) Auto.level][i] = Auto;
+            break;
+        }
+    }
+    pthread_cond_signal(&parked_cars_condition);
+    pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+void remove_car(struct Car Auto) {
+  pthread_mutex_lock(&parked_cars_mlock);
+  for (int i = 0; i < LEVELS; i++) {
+    for (int j = 0; j < LEVEL_CAPACITY; j++) {
+      if (parked_cars[i][j].plate == Auto.plate && parked_cars[i][j].level != Auto.level) {
+        parked_cars[i][j] = (struct Car) {0};
+        break;
+      }
+    }
+  }
+  pthread_cond_signal(&parked_cars_condition);
+  pthread_mutex_unlock(&parked_cars_mlock);
+};
+
+void get_car(struct Car *Auto) {
+  pthread_mutex_lock(&parked_cars_mlock);
+  for (int i = 0; i < LEVELS; i++) {
+    for (int j = 0; j < LEVEL_CAPACITY; j++) {
+      if (parked_cars[i][j].plate == &Auto->plate) {
+        Auto = parked_cars[i][j];
+        break;
+      }
+    }
+  }
+  pthread_mutex_unlock(&parked_cars_mlock);
+};
+
 bool check_LPR(struct LicencePlateRecognition *LPR){
   pthread_mutex_lock(&LPR->mlock);
   pthread_cond_wait(&LPR->condition, &LPR->mlock);
@@ -127,14 +166,7 @@ bool check_plate(char* plate) {
     free(file_plate);
     fclose(file);
     return false;
-}
-
-void get_plate(struct LicencePlateRecognition *LPR, char *plate) {
-  // Get the plate from the LPR
-  pthread_mutex_lock(&LPR->mlock);
-  strcpy(plate, LPR->plate);
-  pthread_mutex_unlock(&LPR->mlock);
-}
+};
 
 bool check_space(char *lvl) {
   pthread_mutex_lock(&parked_cars_mlock);
@@ -217,8 +249,32 @@ void *level_loop(void *arg) {
   struct Level *level = (struct Level *)arg;
   while(1) {
     if (detect_car(&level->LPR)) {
-      int index = get_level_index(level);
-      parked_cars_count[index]++;
+      struct Car Auto;
+      pthread_mutex_lock(&level->LPR.mlock);
+      strcpy(Auto.plate, &level->LPR.plate);
+      pthread_mutex_unlock(&level->LPR.mlock);
+      get_car(&Auto);
+      Auto.level = (char) get_level_index(level);
+      remove_car(Auto);
+      add_car(Auto);
     }
   }
 };
+
+//void *counter_loop(void *arg) {
+//  while(1) {
+//    pthread_mutex_lock(&parked_cars_mlock);
+//    pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
+//    for (int i = 0; i < LEVELS; i++) {
+//      parked_cars_count[i] = 0;
+//    }
+//    for (int i = 0; i < LEVELS; i++) {
+//      for (int j = 0; j < LEVEL_CAPACITY; j++) {
+//        if (parked_cars[i][j].plate[0] != '\0') {
+//          parked_cars_count[i]++;
+//        }
+//      }
+//    }
+//    pthread_mutex_unlock(&parked_cars_mlock);
+//  }
+//};
