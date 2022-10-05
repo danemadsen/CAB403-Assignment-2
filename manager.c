@@ -100,7 +100,10 @@ bool check_plate(char* plate) {
 void raise_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'C') {
-        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+      if (boom_gate->status == 'O') {
+          boom_gate->status = 'L';
+      }
+      pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     boom_gate->status = 'R';
     pthread_cond_signal(&boom_gate->condition);
@@ -110,9 +113,14 @@ void raise_boom_gate(struct BoomGate *boom_gate) {
 void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'O') {
-        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+      if (boom_gate->status == 'C') {
+          boom_gate->status = 'L';
+      }
+      pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     boom_gate->status = 'L';
     pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
 };
+
+

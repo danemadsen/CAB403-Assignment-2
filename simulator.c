@@ -242,6 +242,9 @@ char get_display(struct InformationSign sign) {
 void open_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'R') {
+        if(boom_gate->status == 'L') {
+            boom_gate->status = 'C';
+        }
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
@@ -254,7 +257,10 @@ void open_boom_gate(struct BoomGate *boom_gate) {
 void close_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     while (boom_gate->status != 'L') {
-        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+        if (boom_gate->status == 'R') {
+            boom_gate->status = 'O';
+        }
+        thread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
     usleep(10000);
