@@ -89,6 +89,27 @@ void charge_car(struct Car *car) {
   pthread_mutex_unlock(&revenue_lock);
 };
 
+bool detect_car(struct LicencePlateRecognition *LPR) {
+  // Check if the LPR has a plate
+  if (LPR->plate != '\0') {
+    return true;
+  }
+  return false;
+};
+
+bool check_LPR(struct LicencePlateRecognition *LPR){
+  pthread_mutex_lock(&LPR->mlock);
+  pthread_cond_wait(&LPR->condition, &LPR->mlock);
+  if (check_plate(LPR->plate)) {
+    pthread_mutex_unlock(&LPR->mlock);
+    return true;
+  }
+  else {
+    pthread_mutex_unlock(&LPR->mlock);
+    return false;
+  }
+}
+
 bool check_plate(char* plate) {
     FILE* file = fopen("plates.txt", "r");
     char c;
@@ -97,15 +118,32 @@ bool check_plate(char* plate) {
         fseek(file, -1, SEEK_CUR);
         fgets(file_plate, 7, file);
         if (strcmp(plate, file_plate) == 0) {
+            plate = '\0';
             free(file_plate);
             fclose(file);
             return true;
         }
         memset(file_plate, 0, 7);
     }
+    plate = '\0';
     free(file_plate);
     fclose(file);
     return false;
+}
+
+bool check_space(char *lvl) {
+  pthread_mutex_lock(&parked_cars);
+  for (int i = 0; i < (LEVELS); i++) {
+    for (int j = 0; j < (LEVEL_CAPACITY); j++) {
+      if (parked_cars[i].plate[0] == '\0') {
+      *lvl = (char) i + 1;
+      pthread_mutex_unlock(&parked_cars);
+      return true;
+      }
+    }
+  }
+  pthread_mutex_unlock(&parked_cars);
+  return false;
 }
 
 void raise_boom_gate(struct BoomGate *boom_gate) {
@@ -134,11 +172,26 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_unlock(&boom_gate->mlock);
 };
 
-void *LPR_loop(void *arg){
-  // Get the LPR sensor
-  struct LicencePlateRecognition *LPR = (struct LPR *) arg;
-  pthread_mutex_lock(&LPR->mlock);
-  pthread_cond_wait(&LPR->condition, &LPR->mlock);
-  pthread_mutex_unlock(&LPR->mlock);
-}
+void set_display(struct InformationSign *sign, char signal) {
+    pthread_mutex_lock(&sign->mlock);
+    strcpy(sign->display, signal);
+    pthread_cond_signal(&sign->condition);
+    pthread_mutex_unlock(&sign->mlock);
+};
 
+void *entrance_loop(void *arg) {
+  struct Entrance *entrance = (struct Entrance *)arg;
+  char lvl;
+  while(1) {
+    if (check_LPR(&entrance->LPR) && check_space(lvl)) {
+      set_display(&entrance->information_sign, lvl);
+      raise_boom_gate(&entrance->boom_gate);
+      // wait 20ms
+      usleep(20000);
+      lower_boom_gate(&entrance->boom_gate);
+    }
+    else {
+      set_display(&entrance->information_sign, 'F');
+    }
+  }
+};

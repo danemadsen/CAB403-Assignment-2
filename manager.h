@@ -76,6 +76,10 @@ int shm_fd;
 struct CarPark* Parking;
 double revenue;
 
+struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
+pthread_mutex_t parked_cars_mlock;
+pthread_cond_t parked_cars_condition;
+
 pthread_mutex_t revenue_lock;
 
 bool check_plate(char *plate);
