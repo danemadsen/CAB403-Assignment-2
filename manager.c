@@ -118,33 +118,38 @@ bool check_plate(char* plate) {
         fseek(file, -1, SEEK_CUR);
         fgets(file_plate, 7, file);
         if (strcmp(plate, file_plate) == 0) {
-            plate = '\0';
             free(file_plate);
             fclose(file);
             return true;
         }
         memset(file_plate, 0, 7);
     }
-    plate = '\0';
     free(file_plate);
     fclose(file);
     return false;
 }
 
+void get_plate(struct LicencePlateRecognition *LPR, char *plate) {
+  // Get the plate from the LPR
+  pthread_mutex_lock(&LPR->mlock);
+  strcpy(plate, LPR->plate);
+  pthread_mutex_unlock(&LPR->mlock);
+}
+
 bool check_space(char *lvl) {
-  pthread_mutex_lock(&parked_cars);
+  pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < (LEVELS); i++) {
     for (int j = 0; j < (LEVEL_CAPACITY); j++) {
-      if (parked_cars[i].plate[0] == '\0') {
+      if (parked_cars[i][j].plate[0] == '\0') {
       *lvl = (char) i + 1;
-      pthread_mutex_unlock(&parked_cars);
+      pthread_mutex_unlock(&parked_cars_mlock);
       return true;
       }
     }
   }
-  pthread_mutex_unlock(&parked_cars);
+  pthread_mutex_unlock(&parked_cars_mlock);
   return false;
-}
+};
 
 void raise_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
@@ -179,19 +184,41 @@ void set_display(struct InformationSign *sign, char signal) {
     pthread_mutex_unlock(&sign->mlock);
 };
 
+int get_level_index(struct Level *lvl) {
+  for (int i = 0; i < LEVELS; i++) {
+    if (lvl == &Parking->levels[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 void *entrance_loop(void *arg) {
   struct Entrance *entrance = (struct Entrance *)arg;
   char lvl;
   while(1) {
-    if (check_LPR(&entrance->LPR) && check_space(lvl)) {
-      set_display(&entrance->information_sign, lvl);
-      raise_boom_gate(&entrance->boom_gate);
-      // wait 20ms
-      usleep(20000);
-      lower_boom_gate(&entrance->boom_gate);
+    if (detect_car(&entrance->LPR)) {
+      if (check_LPR(&entrance->LPR) && check_space(lvl)) {
+        set_display(&entrance->information_sign, lvl);
+        raise_boom_gate(&entrance->boom_gate);
+        // wait 20ms
+        usleep(20000);
+        lower_boom_gate(&entrance->boom_gate);
+      }
+      else {
+        set_display(&entrance->information_sign, 'F');
+      }
+      *entrance->LPR.plate = '\0';
     }
-    else {
-      set_display(&entrance->information_sign, 'F');
+  }
+};
+
+void *level_loop(void *arg) {
+  struct Level *level = (struct Level *)arg;
+  while(1) {
+    if (detect_car(&level->LPR)) {
+      int index = get_level_index(level);
+      parked_cars_count[index]++;
     }
   }
 };
