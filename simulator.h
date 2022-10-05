@@ -103,15 +103,16 @@ struct Car exit_queue[EXITS][LEVEL_CAPACITY];
 pthread_mutex_t exit_queue_lock[EXITS];
 pthread_cond_t exit_queue_condition[EXITS];
 
-struct Car parked_cars[LEVELS*LEVEL_CAPACITY];
-pthread_mutex_t parked_cars_mlock;
-pthread_cond_t parked_cars_condition;
+//struct Car parked_cars[LEVELS*LEVEL_CAPACITY];
+//pthread_mutex_t parked_cars_mlock;
+//pthread_cond_t parked_cars_condition;
 
 pthread_t car_generator_loop_thread;
-pthread_t car_sorter_loop_thread;
+//pthread_t car_sorter_loop_thread;
 pthread_t entrance_loop_thread[ENTRANCES];
 pthread_t exit_loop_threads[EXITS];
 pthread_t temperature_loop_thread;
+pthread_t car_threads[LEVELS*LEVEL_CAPACITY];
 
 void new_car();
 void add_car(struct Car Auto);

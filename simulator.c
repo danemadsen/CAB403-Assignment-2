@@ -99,33 +99,33 @@ void new_car() {
     send_to_random_entrance(Auto);
 };
 
-void add_car(struct Car Auto){
-    pthread_mutex_lock(&parked_cars_mlock);
-    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-        if (parked_cars[i].plate == NULL) {
-            parked_cars[i] = Auto;
-            break;
-        }
-    }
-    pthread_cond_signal(&parked_cars_condition);
-    pthread_mutex_unlock(&parked_cars_mlock);
-};
+//void add_car(struct Car Auto){
+//    pthread_mutex_lock(&parked_cars_mlock);
+//    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+//        if (parked_cars[i].plate == NULL) {
+//            parked_cars[i] = Auto;
+//            break;
+//        }
+//    }
+//    pthread_cond_signal(&parked_cars_condition);
+//    pthread_mutex_unlock(&parked_cars_mlock);
+//};
 
-void get_next_car(struct Car *Auto) {
-    pthread_mutex_lock(&parked_cars_mlock);
-    int i = 0;
-    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
-        i++;
-    }
-    *Auto = parked_cars[i];
-    if(Auto->departure_time < ((intptr_t) time(NULL))) {
-        *parked_cars[i].plate = '\0';
-    }
-    else {
-        *Auto->plate = '\0';
-    }
-    pthread_mutex_unlock(&parked_cars_mlock);
-};
+//void get_next_car(struct Car *Auto) {
+//    pthread_mutex_lock(&parked_cars_mlock);
+//    int i = 0;
+//    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
+//        i++;
+//    }
+//    *Auto = parked_cars[i];
+//    if(Auto->departure_time < ((intptr_t) time(NULL))) {
+//        *parked_cars[i].plate = '\0';
+//    }
+//    else {
+//        *Auto->plate = '\0';
+//    }
+//    pthread_mutex_unlock(&parked_cars_mlock);
+//};
 
 struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
     pthread_mutex_lock(&entrance_queue_lock[entry]);
@@ -154,15 +154,20 @@ void enter_car(int entry) {
     // check if Auto.level is an approved char
     if (Auto.level < '1' || Auto.level > '5') return;
     open_boom_gate(&Parking->entrances[entry].boom_gate);
-    // Log the time in unix millis to the car arrival_time
-    Auto.arrival_time = (int) time(NULL);
     // wait 10ms
     usleep(10000);
     send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
     srand(time(NULL));
-    Auto.departure_time = Auto.arrival_time + (rand() % 9901 + 100);
+    Auto.departure_time = ((int) time(NULL)) + (rand() % 9901 + 100);
     close_boom_gate(&Parking->entrances[entry].boom_gate);
-    add_car(Auto);
+    // Find the first available car_threads pthread_t
+    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+        if (car_threads[i] == 0) {
+            // Create a new car thread
+            pthread_create(&car_threads[i], NULL, car_instance, &Auto);
+            break;
+        }
+    }
 };
 
 void exit_car(int ext) {
@@ -172,9 +177,7 @@ void exit_car(int ext) {
     // wait 10ms
     usleep(10000);
     // send the plate to the LPR
-    srand(time(NULL));
-    int random_exit = rand() % EXITS;
-    send_plate(Auto.plate, &Parking->exits[random_exit].LPR);
+    send_plate(Auto.plate, &Parking->exits[ext].LPR);
     open_boom_gate(&Parking->exits[ext].boom_gate);
     close_boom_gate(&Parking->exits[ext].boom_gate);
 };
@@ -283,19 +286,19 @@ void send_to_random_entrance(struct Car Auto) {
     pthread_mutex_unlock(&entrance_queue_lock[random_entrance]);
 };
 
-//void send_to_random_exit(struct Car Auto) {
-//    srand(time(NULL));
-//    int random_exit = rand() % EXITS;
-//    pthread_mutex_lock(&exit_queue_lock[random_exit]);
-//    for (int i = 0; i < EXITS; i++) {
-//        if (exit_queue[random_exit][i].plate == NULL) {
-//            exit_queue[random_exit][i] = Auto;
-//            break;
-//        }
-//    }
-//    pthread_cond_signal(&exit_queue_condition[random_exit]);
-//    pthread_mutex_unlock(&exit_queue_lock[random_exit]);
-//};
+void send_to_random_exit(struct Car Auto) {
+    srand(time(NULL));
+    int random_exit = rand() % EXITS;
+    pthread_mutex_lock(&exit_queue_lock[random_exit]);
+    for (int i = 0; i < EXITS; i++) {
+        if (exit_queue[random_exit][i].plate == NULL) {
+            exit_queue[random_exit][i] = Auto;
+            break;
+        }
+    }
+    pthread_cond_signal(&exit_queue_condition[random_exit]);
+    pthread_mutex_unlock(&exit_queue_lock[random_exit]);
+};
 
 void set_random_temperature(int lvl){
     srand(time(NULL)*(lvl+1));
@@ -313,22 +316,22 @@ void *car_generator_loop(void *arg) {
     }
 };
 
-void *car_sorter_loop(void *arg) {
-    while (1) {
-        pthread_mutex_lock(&parked_cars_mlock);
-        pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
-        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
-                if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
-                    struct Car temp = parked_cars[i];
-                    parked_cars[i] = parked_cars[j];
-                    parked_cars[j] = temp;
-                }
-            }
-        }
-        pthread_mutex_unlock(&parked_cars_mlock);
-    }
-};
+//void *car_sorter_loop(void *arg) {
+//    while (1) {
+//        pthread_mutex_lock(&parked_cars_mlock);
+//        pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
+//        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+//            for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
+//                if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
+//                    struct Car temp = parked_cars[i];
+//                    parked_cars[i] = parked_cars[j];
+//                    parked_cars[j] = temp;
+//                }
+//            }
+//        }
+//        pthread_mutex_unlock(&parked_cars_mlock);
+//    }
+//};
 
 void *temperature_loop(void *arg) {
     while (1) {
@@ -364,6 +367,14 @@ void *exit_loop(void *arg) {
     }
 };
 
+void *car_instance(void *arg) {
+    struct Car Auto = *((struct Car *) arg);
+    // wait 1-100ms
+    usleep((rand() % 100000) + 1000);
+    // send the car to a random exit
+    send_to_random_exit(Auto);
+};
+
 int main(){
     // Setup the shared memory segement
     shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
@@ -393,8 +404,8 @@ int main(){
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
-    pthread_mutex_init(&parked_cars_mlock, NULL);
-    pthread_cond_init(&parked_cars_condition, NULL);
+    //pthread_mutex_init(&parked_cars_mlock, NULL);
+    //pthread_cond_init(&parked_cars_condition, NULL);
 
     // Initialise the boom_gates to have the status 'C'
     for (int i = 0; i < ENTRANCES; i++) {
@@ -411,7 +422,7 @@ int main(){
     
     // Initialise threads of loop functions
     pthread_create(&car_generator_loop_thread, NULL, car_generator_loop, NULL);
-    pthread_create(&car_sorter_loop_thread, NULL, car_sorter_loop, NULL);
+    //pthread_create(&car_sorter_loop_thread, NULL, car_sorter_loop, NULL);
     pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
     for (int i = 0; i < ENTRANCES; i++) {
         pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
