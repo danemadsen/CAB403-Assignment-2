@@ -76,6 +76,8 @@ int main() {
   shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
+  revenue = 0;
+
   //Initialise the mutexes and conditions
   pthread_mutex_init(&parked_cars_mlock, NULL);
   pthread_cond_init(&parked_cars_condition, NULL);

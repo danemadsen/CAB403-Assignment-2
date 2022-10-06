@@ -75,7 +75,7 @@ for more information.)
 
 int shm_fd;
 struct CarPark* Parking;
-double revenue = 0;
+double revenue;
 
 struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];
