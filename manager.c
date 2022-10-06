@@ -75,6 +75,22 @@ int main() {
   // Setup the shared memory segement
   shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  
+  //Initialise the mutexes and conditions
+  pthread_mutex_init(&parked_cars_mlock, NULL);
+  pthread_cond_init(&parked_cars_condition, NULL);
+  pthread_mutex_init(&revenue_lock, NULL);
+
+  // Initialise the threads
+  for (int i = 0; i < ENTRANCES; i++) {
+    pthread_create(&entrance_threads[i], NULL, entrance_loop, &i);
+  }
+  for (int i = 0; i < LEVELS; i++) {
+    pthread_create(&level_threads[i], NULL, level_loop, &i);
+  }
+  for (int i = 0; i < EXITS; i++) {
+    pthread_create(&exit_threads[i], NULL, exit_loop, &i);
+  }
   return 0;
 }
 
@@ -257,6 +273,7 @@ void *level_loop(void *arg) {
       Auto.level = (char) get_level_index(level);
       remove_car(Auto);
       add_car(Auto);
+      *level->LPR.plate = '\0';
     }
   }
 };
@@ -280,21 +297,3 @@ void *exit_loop(void *arg) {
     }
   }
 };
-
-//void *counter_loop(void *arg) {
-//  while(1) {
-//    pthread_mutex_lock(&parked_cars_mlock);
-//    pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
-//    for (int i = 0; i < LEVELS; i++) {
-//      parked_cars_count[i] = 0;
-//    }
-//    for (int i = 0; i < LEVELS; i++) {
-//      for (int j = 0; j < LEVEL_CAPACITY; j++) {
-//        if (parked_cars[i][j].plate[0] != '\0') {
-//          parked_cars_count[i]++;
-//        }
-//      }
-//    }
-//    pthread_mutex_unlock(&parked_cars_mlock);
-//  }
-//};

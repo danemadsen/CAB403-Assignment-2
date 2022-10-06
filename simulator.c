@@ -93,23 +93,66 @@ the level LPR for the second time).
 #include "simulator.h"
 #include "common.h"
 
+int main(){
+    // Setup the shared memory segement
+    shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, SIZE);
+    Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+    // Initialize the mutexes and conditions
+    for (int i = 0; i < ENTRANCES; i++) {
+        pthread_mutex_init(&entrance_queue_lock[i], NULL);
+        pthread_cond_init(&entrance_queue_condition[i], NULL);
+        pthread_mutex_init(&Parking->entrances[i].LPR.mlock, NULL);
+        pthread_cond_init(&Parking->entrances[i].LPR.condition, NULL);
+        pthread_mutex_init(&Parking->entrances[i].boom_gate.mlock, NULL);
+        pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
+        pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
+        pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
+    }
+    for (int i = 0; i < EXITS; i++) {
+        pthread_mutex_init(&exit_queue_lock[i], NULL);
+        pthread_cond_init(&exit_queue_condition[i], NULL);
+        pthread_mutex_init(&Parking->exits[i].LPR.mlock, NULL);
+        pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
+        pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
+        pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
+    }
+    for (int i = 0; i < LEVELS; i++) {
+        pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
+        pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
+    }
+
+    // Initialise the boom_gates to have the status 'C'
+    for (int i = 0; i < ENTRANCES; i++) {
+        Parking->entrances[i].boom_gate.status = 'C';
+    }
+    for (int i = 0; i < EXITS; i++) {
+        Parking->exits[i].boom_gate.status = 'C';
+    }
+
+    // Initialise the temperature of each level to be 20
+    for (int i = 0; i < LEVELS; i++) {
+        Parking->levels[i].temperature = 20;
+    }
+    
+    // Initialise threads of loop functions
+    pthread_create(&car_generator_loop_thread, NULL, car_generator_loop, NULL);
+    pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
+    for (int i = 0; i < ENTRANCES; i++) {
+        pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
+    }
+    for (int i = 0; i < EXITS; i++) {
+        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &i);
+    }
+    return 0;
+};
+
 void new_car() {
     struct Car Auto;
     get_random_plate(Auto.plate);
     send_to_random_entrance(Auto);
 };
-
-//void add_car(struct Car Auto){
-//    pthread_mutex_lock(&parked_cars_mlock);
-//    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-//        if (parked_cars[i].plate == NULL) {
-//            parked_cars[i] = Auto;
-//            break;
-//        }
-//    }
-//    pthread_cond_signal(&parked_cars_condition);
-//    pthread_mutex_unlock(&parked_cars_mlock);
-//};
 
 struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
     pthread_mutex_lock(lock);
@@ -300,23 +343,6 @@ void *car_generator_loop(void *arg) {
     }
 };
 
-//void *car_sorter_loop(void *arg) {
-//    while (1) {
-//        pthread_mutex_lock(&parked_cars_mlock);
-//        pthread_cond_wait(&parked_cars_condition, &parked_cars_mlock);
-//        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-//            for (int j = i + 1; j < LEVELS*LEVEL_CAPACITY; j++) {
-//                if (parked_cars[i].departure_time > parked_cars[j].departure_time) {
-//                    struct Car temp = parked_cars[i];
-//                    parked_cars[i] = parked_cars[j];
-//                    parked_cars[j] = temp;
-//                }
-//            }
-//        }
-//        pthread_mutex_unlock(&parked_cars_mlock);
-//    }
-//};
-
 void *temperature_loop(void *arg) {
     while (1) {
         // wait 1-5ms
@@ -357,62 +383,4 @@ void *car_instance(void *arg) {
     usleep((rand() % 100000) + 1000);
     // send the car to a random exit
     send_to_random_exit(Auto);
-};
-
-int main(){
-    // Setup the shared memory segement
-    shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
-    ftruncate(shm_fd, SIZE);
-    Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
-    // Initialize the mutexes and conditions
-    for (int i = 0; i < ENTRANCES; i++) {
-        pthread_mutex_init(&entrance_queue_lock[i], NULL);
-        pthread_cond_init(&entrance_queue_condition[i], NULL);
-        pthread_mutex_init(&Parking->entrances[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].LPR.condition, NULL);
-        pthread_mutex_init(&Parking->entrances[i].boom_gate.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
-        pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
-    }
-    for (int i = 0; i < EXITS; i++) {
-        pthread_mutex_init(&exit_queue_lock[i], NULL);
-        pthread_cond_init(&exit_queue_condition[i], NULL);
-        pthread_mutex_init(&Parking->exits[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
-        pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
-        pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
-    }
-    for (int i = 0; i < LEVELS; i++) {
-        pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
-    }
-    //pthread_mutex_init(&parked_cars_mlock, NULL);
-    //pthread_cond_init(&parked_cars_condition, NULL);
-
-    // Initialise the boom_gates to have the status 'C'
-    for (int i = 0; i < ENTRANCES; i++) {
-        Parking->entrances[i].boom_gate.status = 'C';
-    }
-    for (int i = 0; i < EXITS; i++) {
-        Parking->exits[i].boom_gate.status = 'C';
-    }
-
-    // Initialise the temperature of each level to be 20
-    for (int i = 0; i < LEVELS; i++) {
-        Parking->levels[i].temperature = 20;
-    }
-    
-    // Initialise threads of loop functions
-    pthread_create(&car_generator_loop_thread, NULL, car_generator_loop, NULL);
-    //pthread_create(&car_sorter_loop_thread, NULL, car_sorter_loop, NULL);
-    pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
-    for (int i = 0; i < ENTRANCES; i++) {
-        pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
-    }
-    for (int i = 0; i < EXITS; i++) {
-        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &i);
-    }
-    return 0;
 };
