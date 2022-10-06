@@ -116,8 +116,7 @@ pthread_t car_threads[LEVELS*LEVEL_CAPACITY];
 
 void new_car();
 void add_car(struct Car Auto);
-void get_next_car(struct Car *Auto);
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry);
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
 void enter_car(int entry);
 void exit_car(int ext);
 
@@ -137,7 +136,8 @@ void send_to_random_exit(struct Car Auto);
 void set_random_temperature(int lvl);
 
 void *car_generator_loop(void *arg);
-void *car_sorter_loop(void *arg);
+//void *car_sorter_loop(void *arg);
+void *car_instance(void *arg);
 void *temperature_loop(void *arg);
 void *entrance_loop(void *arg);
 void *exit_loop(void *arg);

@@ -91,7 +91,7 @@ void charge_car(struct Car *car) {
 
 bool detect_car(struct LicencePlateRecognition *LPR) {
   // Check if the LPR has a plate
-  if (LPR->plate != '\0') {
+  if (*LPR->plate != '\0') {
     return true;
   }
   return false;
@@ -127,7 +127,7 @@ void get_car(struct Car *Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (parked_cars[i][j].plate == &Auto->plate) {
+      if (parked_cars[i][j].plate == Auto->plate) {
         *Auto = parked_cars[i][j];
         break;
       }
@@ -211,7 +211,7 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
 
 void set_display(struct InformationSign *sign, char signal) {
     pthread_mutex_lock(&sign->mlock);
-    strcpy(sign->display, signal);
+    sign->display = signal;
     pthread_cond_signal(&sign->condition);
     pthread_mutex_unlock(&sign->mlock);
 };
@@ -230,7 +230,7 @@ void *entrance_loop(void *arg) {
   char lvl;
   while(1) {
     if (detect_car(&entrance->LPR)) {
-      if (check_LPR(&entrance->LPR) && check_space(lvl)) {
+      if (check_LPR(&entrance->LPR) && check_space(&lvl)) {
         set_display(&entrance->information_sign, lvl);
         raise_boom_gate(&entrance->boom_gate);
         // wait 20ms
@@ -251,7 +251,7 @@ void *level_loop(void *arg) {
     if (detect_car(&level->LPR)) {
       struct Car Auto;
       pthread_mutex_lock(&level->LPR.mlock);
-      strcpy(Auto.plate, &level->LPR.plate);
+      strcpy(Auto.plate, level->LPR.plate);
       pthread_mutex_unlock(&level->LPR.mlock);
       get_car(&Auto);
       Auto.level = (char) get_level_index(level);

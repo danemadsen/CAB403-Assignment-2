@@ -111,24 +111,8 @@ void new_car() {
 //    pthread_mutex_unlock(&parked_cars_mlock);
 //};
 
-//void get_next_car(struct Car *Auto) {
-//    pthread_mutex_lock(&parked_cars_mlock);
-//    int i = 0;
-//    while(parked_cars[i].plate == NULL && i < LEVELS*LEVEL_CAPACITY) {
-//        i++;
-//    }
-//    *Auto = parked_cars[i];
-//    if(Auto->departure_time < ((intptr_t) time(NULL))) {
-//        *parked_cars[i].plate = '\0';
-//    }
-//    else {
-//        *Auto->plate = '\0';
-//    }
-//    pthread_mutex_unlock(&parked_cars_mlock);
-//};
-
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
-    pthread_mutex_lock(&entrance_queue_lock[entry]);
+struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
+    pthread_mutex_lock(lock);
     struct Car Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
         if (Queue[i].plate == NULL) {
@@ -138,13 +122,14 @@ struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], int entry) {
             Queue[i - 1] = Queue[i];
         }
     }
-    pthread_mutex_unlock(&entrance_queue_lock[entry]);
+    pthread_mutex_unlock(lock);
     return Auto;
 };
 
 void enter_car(int entry) {
     // Get the first car in the queue
-    struct Car Auto = move_queue(entrance_queue[entry], entry);
+    struct Car Auto = move_queue(entrance_queue[entry], &entrance_queue_lock[entry]);
+    if (Auto.plate == NULL) return;
     // wait 2ms
     usleep(2000);
     // send the plate to the LPR
@@ -171,8 +156,7 @@ void enter_car(int entry) {
 };
 
 void exit_car(int ext) {
-    struct Car Auto;
-    get_next_car(&Auto);
+    struct Car Auto = move_queue(exit_queue[ext], &exit_queue_lock[ext]);
     if (Auto.plate == NULL) return;
     // wait 10ms
     usleep(10000);
@@ -263,7 +247,7 @@ void close_boom_gate(struct BoomGate *boom_gate) {
         if (boom_gate->status == 'R') {
             boom_gate->status = 'O';
         }
-        thread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
     usleep(10000);
