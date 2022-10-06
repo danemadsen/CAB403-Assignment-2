@@ -137,7 +137,6 @@ int main(){
     }
     
     // Initialise threads of loop functions
-    pthread_create(&car_generator_loop_thread, NULL, car_generator_loop, NULL);
     pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
     for (int i = 0; i < ENTRANCES; i++) {
         pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
@@ -145,10 +144,12 @@ int main(){
     for (int i = 0; i < EXITS; i++) {
         pthread_create(&exit_loop_threads[i], NULL, exit_loop, &i);
     }
+    car_generator_loop();
     return 0;
 };
 
 void new_car() {
+    printf("New car generated");
     struct Car Auto;
     get_random_plate(Auto.plate);
     send_to_random_entrance(Auto);
@@ -333,8 +334,9 @@ void set_random_temperature(int lvl){
     Parking->levels[lvl].temperature += rand() % 7 - 3;
 };
 
-void *car_generator_loop(void *arg) {
+void car_generator_loop() {
     while (1) {
+        printf("Generator is running");
         srand(time(NULL));
         // wait 1-100ms
         usleep((rand() % 100000) + 1000);
@@ -345,6 +347,7 @@ void *car_generator_loop(void *arg) {
 
 void *temperature_loop(void *arg) {
     while (1) {
+        printf("Temperature is running\n");
         // wait 1-5ms
         usleep((rand() % 5000) + 1000);
         for (int i = 0; i < LEVELS; i++) {
@@ -355,6 +358,7 @@ void *temperature_loop(void *arg) {
 
 void *entrance_loop(void *arg) {
     int entry = *((int *) arg);
+    printf("Entrance %d is running\n", entry);
     while (1) {
         pthread_mutex_lock(&entrance_queue_lock[entry]);
         while (entrance_queue[entry][0].plate == NULL) {
@@ -367,6 +371,7 @@ void *entrance_loop(void *arg) {
 
 void *exit_loop(void *arg) {
     int ext = *((int *) arg);
+    printf("Exit %d is running\n", ext);
     while (1) {
         pthread_mutex_lock(&exit_queue_lock[ext]);
         while (exit_queue[ext][0].plate == NULL) {
@@ -379,6 +384,7 @@ void *exit_loop(void *arg) {
 
 void *car_instance(void *arg) {
     struct Car Auto = *((struct Car *) arg);
+    printf("Car %s is running\n", Auto.plate);
     // wait 1-100ms
     usleep((rand() % 100000) + 1000);
     // send the car to a random exit

@@ -135,7 +135,7 @@ void send_to_random_exit(struct Car Auto);
 
 void set_random_temperature(int lvl);
 
-void *car_generator_loop(void *arg);
+void car_generator_loop();
 //void *car_sorter_loop(void *arg);
 void *car_instance(void *arg);
 void *temperature_loop(void *arg);
