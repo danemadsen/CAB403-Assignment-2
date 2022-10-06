@@ -261,6 +261,26 @@ void *level_loop(void *arg) {
   }
 };
 
+void *exit_loop(void *arg) {
+  struct Exit *exit = (struct Exit *)arg;
+  while(1) {
+    if (detect_car(&exit->LPR)) {
+      struct Car Auto;
+      pthread_mutex_lock(&exit->LPR.mlock);
+      strcpy(Auto.plate, exit->LPR.plate);
+      pthread_mutex_unlock(&exit->LPR.mlock);
+      get_car(&Auto);
+      remove_car(Auto);
+      charge_car(&Auto);
+      raise_boom_gate(&exit->boom_gate);
+      // wait 20ms
+      usleep(20000);
+      lower_boom_gate(&exit->boom_gate);
+      *exit->LPR.plate = '\0';
+    }
+  }
+};
+
 //void *counter_loop(void *arg) {
 //  while(1) {
 //    pthread_mutex_lock(&parked_cars_mlock);
