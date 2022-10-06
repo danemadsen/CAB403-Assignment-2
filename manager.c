@@ -204,7 +204,7 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_unlock(&boom_gate->mlock);
 };
 
-void set_display(struct InformationSign *sign, char signal) {
+void set_sign(struct InformationSign *sign, char signal) {
     pthread_mutex_lock(&sign->mlock);
     sign->display = signal;
     pthread_cond_signal(&sign->condition);
@@ -227,14 +227,14 @@ void *entrance_loop(void *arg) {
     pthread_mutex_lock(&entrance->LPR.mlock);
     pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     if (check_plate(entrance->LPR.plate) && check_space(&lvl)) {
-      set_display(&entrance->information_sign, lvl);
+      set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);
       lower_boom_gate(&entrance->boom_gate);
     }
     else {
-      set_display(&entrance->information_sign, 'F');
+      set_sign(&entrance->information_sign, 'F');
     }
     *entrance->LPR.plate = '\0';
     pthread_mutex_unlock(&entrance->LPR.mlock);
