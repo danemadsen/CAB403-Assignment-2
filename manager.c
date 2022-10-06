@@ -105,14 +105,6 @@ void charge_car(struct Car *car) {
   pthread_mutex_unlock(&revenue_lock);
 };
 
-//bool detect_car(struct LicencePlateRecognition *LPR) {
-//  // Check if the LPR has a plate
-//  if (*LPR->plate != '\0') {
-//    return true;
-//  }
-//  return false;
-//};
-
 void add_car(struct Car Auto){
     pthread_mutex_lock(&parked_cars_mlock);
     for (int i = 0; i < LEVEL_CAPACITY; i++) {
@@ -151,19 +143,6 @@ void get_car(struct Car *Auto) {
   }
   pthread_mutex_unlock(&parked_cars_mlock);
 };
-
-//bool check_LPR(struct LicencePlateRecognition *LPR){
-//  pthread_mutex_lock(&LPR->mlock);
-//  pthread_cond_wait(&LPR->condition, &LPR->mlock);
-//  if (check_plate(LPR->plate)) {
-//    pthread_mutex_unlock(&LPR->mlock);
-//    return true;
-//  }
-//  else {
-//    pthread_mutex_unlock(&LPR->mlock);
-//    return false;
-//  }
-//}
 
 bool check_plate(char* plate) {
     FILE* file = fopen("plates.txt", "r");
