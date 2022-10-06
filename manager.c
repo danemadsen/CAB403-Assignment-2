@@ -91,6 +91,7 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &i);
   }
+  display_loop();
   return 0;
 }
 
@@ -204,6 +205,13 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_unlock(&boom_gate->mlock);
 };
 
+char get_boom_gate_status(struct BoomGate *boom_gate) {
+    pthread_mutex_lock(&boom_gate->mlock);
+    char status = boom_gate->status;
+    pthread_mutex_unlock(&boom_gate->mlock);
+    return status;
+};
+
 void set_sign(struct InformationSign *sign, char signal) {
     pthread_mutex_lock(&sign->mlock);
     sign->display = signal;
@@ -218,7 +226,19 @@ int get_level_index(struct Level *lvl) {
     }
   }
   return -1;
-}
+};
+
+int get_level_count(int level) {
+  int count = 0;
+  pthread_mutex_lock(&parked_cars_mlock);
+  for (int i = 0; i < LEVEL_CAPACITY; i++) {
+    if (parked_cars[level][i].plate[0] != '\0') {
+      count++;
+    }
+  }
+  pthread_mutex_unlock(&parked_cars_mlock);
+  return count;
+};
 
 void *entrance_loop(void *arg) {
   struct Entrance *entrance = (struct Entrance *)arg;
@@ -273,5 +293,27 @@ void *exit_loop(void *arg) {
     usleep(20000);
     lower_boom_gate(&exit->boom_gate);
     *exit->LPR.plate = '\0';
+  }
+};
+
+void display_loop() {
+  while(1) {
+    printf("Current Revenue: %d\n", revenue);
+    printf("\n");
+    for (int i = 0; i < LEVELS; i++) {
+      printf("Level %d Vehicle Count: %d\n", i + 1, get_level_count(i));
+    }
+    printf("\n");
+    // Display the current status of all boom gates
+    for (int i = 0; i < ENTRANCES; i++) {
+      //pthread_mutex_lock(&Parking->entrances[i].boom_gate.mlock);
+      printf("Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate));
+      //pthread_mutex_unlock(&Parking->entrances[i].boom_gate.mlock);
+    }
+    for (int i = 0; i < EXITS; i++) {
+      //pthread_mutex_lock(&Parking->exits[i].boom_gate.mlock);
+      printf("Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate));
+      //pthread_mutex_unlock(&Parking->exits[i].boom_gate.mlock);
+    }
   }
 };

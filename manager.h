@@ -75,10 +75,10 @@ for more information.)
 
 int shm_fd;
 struct CarPark* Parking;
-double revenue;
+double revenue = 0;
 
 struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
-//int parked_cars_count[LEVELS];
+int parked_cars_count[LEVELS];
 pthread_mutex_t parked_cars_mlock;
 pthread_cond_t parked_cars_condition;
 pthread_mutex_t revenue_lock;
@@ -92,3 +92,4 @@ bool check_plate(char *plate);
 void *entrance_loop(void *arg);
 void *level_loop(void *arg);
 void *exit_loop(void *arg);
+void display_loop();
