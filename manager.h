@@ -69,6 +69,7 @@ for more information.)
 #include <fcntl.h>
 #include <stdbool.h>
 #include <string.h>
+#include "common.h"
 
 #define RATE 0.05
 

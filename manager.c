@@ -128,7 +128,7 @@ void get_car(struct Car *Auto) {
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
       if (parked_cars[i][j].plate == &Auto->plate) {
-        Auto = parked_cars[i][j];
+        *Auto = parked_cars[i][j];
         break;
       }
     }
