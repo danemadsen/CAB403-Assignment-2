@@ -105,13 +105,13 @@ void charge_car(struct Car *car) {
   pthread_mutex_unlock(&revenue_lock);
 };
 
-bool detect_car(struct LicencePlateRecognition *LPR) {
-  // Check if the LPR has a plate
-  if (*LPR->plate != '\0') {
-    return true;
-  }
-  return false;
-};
+//bool detect_car(struct LicencePlateRecognition *LPR) {
+//  // Check if the LPR has a plate
+//  if (*LPR->plate != '\0') {
+//    return true;
+//  }
+//  return false;
+//};
 
 void add_car(struct Car Auto){
     pthread_mutex_lock(&parked_cars_mlock);
@@ -152,18 +152,18 @@ void get_car(struct Car *Auto) {
   pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-bool check_LPR(struct LicencePlateRecognition *LPR){
-  pthread_mutex_lock(&LPR->mlock);
-  pthread_cond_wait(&LPR->condition, &LPR->mlock);
-  if (check_plate(LPR->plate)) {
-    pthread_mutex_unlock(&LPR->mlock);
-    return true;
-  }
-  else {
-    pthread_mutex_unlock(&LPR->mlock);
-    return false;
-  }
-}
+//bool check_LPR(struct LicencePlateRecognition *LPR){
+//  pthread_mutex_lock(&LPR->mlock);
+//  pthread_cond_wait(&LPR->condition, &LPR->mlock);
+//  if (check_plate(LPR->plate)) {
+//    pthread_mutex_unlock(&LPR->mlock);
+//    return true;
+//  }
+//  else {
+//    pthread_mutex_unlock(&LPR->mlock);
+//    return false;
+//  }
+//}
 
 bool check_plate(char* plate) {
     FILE* file = fopen("plates.txt", "r");
@@ -245,55 +245,54 @@ void *entrance_loop(void *arg) {
   struct Entrance *entrance = (struct Entrance *)arg;
   char lvl;
   while(1) {
-    if (detect_car(&entrance->LPR)) {
-      if (check_LPR(&entrance->LPR) && check_space(&lvl)) {
-        set_display(&entrance->information_sign, lvl);
-        raise_boom_gate(&entrance->boom_gate);
-        // wait 20ms
-        usleep(20000);
-        lower_boom_gate(&entrance->boom_gate);
-      }
-      else {
-        set_display(&entrance->information_sign, 'F');
-      }
-      *entrance->LPR.plate = '\0';
+    pthread_mutex_lock(&entrance->LPR.mlock);
+    pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
+    if (check_plate(entrance->LPR.plate) && check_space(&lvl)) {
+      set_display(&entrance->information_sign, lvl);
+      raise_boom_gate(&entrance->boom_gate);
+      // wait 20ms
+      usleep(20000);
+      lower_boom_gate(&entrance->boom_gate);
     }
+    else {
+      set_display(&entrance->information_sign, 'F');
+    }
+    *entrance->LPR.plate = '\0';
+    pthread_mutex_unlock(&entrance->LPR.mlock);
   }
 };
 
 void *level_loop(void *arg) {
   struct Level *level = (struct Level *)arg;
   while(1) {
-    if (detect_car(&level->LPR)) {
-      struct Car Auto;
-      pthread_mutex_lock(&level->LPR.mlock);
-      strcpy(Auto.plate, level->LPR.plate);
-      pthread_mutex_unlock(&level->LPR.mlock);
-      get_car(&Auto);
-      Auto.level = (char) get_level_index(level);
-      remove_car(Auto);
-      add_car(Auto);
-      *level->LPR.plate = '\0';
-    }
+    struct Car Auto;
+    pthread_mutex_lock(&level->LPR.mlock);
+    pthread_cond_wait(&level->LPR.condition, &level->LPR.mlock);
+    strcpy(Auto.plate, level->LPR.plate);
+    *level->LPR.plate = '\0';
+    pthread_mutex_unlock(&level->LPR.mlock);
+    get_car(&Auto);
+    Auto.level = (char) get_level_index(level);
+    remove_car(Auto);
+    add_car(Auto);
   }
 };
 
 void *exit_loop(void *arg) {
   struct Exit *exit = (struct Exit *)arg;
   while(1) {
-    if (detect_car(&exit->LPR)) {
-      struct Car Auto;
-      pthread_mutex_lock(&exit->LPR.mlock);
-      strcpy(Auto.plate, exit->LPR.plate);
-      pthread_mutex_unlock(&exit->LPR.mlock);
-      get_car(&Auto);
-      remove_car(Auto);
-      charge_car(&Auto);
-      raise_boom_gate(&exit->boom_gate);
-      // wait 20ms
-      usleep(20000);
-      lower_boom_gate(&exit->boom_gate);
-      *exit->LPR.plate = '\0';
-    }
+    struct Car Auto;
+    pthread_mutex_lock(&exit->LPR.mlock);
+    pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
+    strcpy(Auto.plate, exit->LPR.plate);
+    pthread_mutex_unlock(&exit->LPR.mlock);
+    get_car(&Auto);
+    remove_car(Auto);
+    charge_car(&Auto);
+    raise_boom_gate(&exit->boom_gate);
+    // wait 20ms
+    usleep(20000);
+    lower_boom_gate(&exit->boom_gate);
+    *exit->LPR.plate = '\0';
   }
 };
