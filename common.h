@@ -37,6 +37,7 @@ Student Email: n10983864@qut.edu.au
 #include <unistd.h>
 #include <fcntl.h>
 
+#define SHM_NAME "PARKING"
 #define SIZE 2930
 #define LEVELS 5
 #define LEVEL_CAPACITY 20

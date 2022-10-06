@@ -73,7 +73,7 @@ for more information.)
 
 int main() {
   // Setup the shared memory segement
-  shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
+  shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
   //Initialise the mutexes and conditions

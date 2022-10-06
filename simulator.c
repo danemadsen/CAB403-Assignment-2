@@ -95,7 +95,7 @@ the level LPR for the second time).
 
 int main(){
     // Setup the shared memory segement
-    shm_fd = shm_open("PARKING", O_CREAT | O_RDWR, 0666);
+    shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     ftruncate(shm_fd, SIZE);
     Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
