@@ -135,9 +135,7 @@ int main(){
     pthread_create(&exit_loop_threads[0], NULL, exit_loop, &nums[0]);
     // Initialise thread of temperature loop function
     //pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
-    // wait 1 seconds before starting the car loop
-    sleep(1);
-    //car_generator_loop();
+    car_generator_loop();
     while(1);
     return 0;
 };
@@ -314,7 +312,7 @@ void send_to_random_entrance(struct Car Auto) {
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_queue_lock[random_entrance]);
     for (int i = 0; i < ENTRANCES; i++) {
-        if (entrance_queue[random_entrance][i].plate == NULL) {
+        if (check_plate(entrance_queue[random_entrance][i].plate) == false) {
             entrance_queue[random_entrance][i] = Auto;
             break;
         }
@@ -376,18 +374,15 @@ void *temperature_loop(void *arg) {
 
 void *entrance_loop(void *arg) {
     int entry = *((int *) arg);
-    printf("Entrance loop %d started\n", entry);
     while (1) {
-        printf("Entrance loop %d entered\n", entry);
         pthread_mutex_lock(&entrance_queue_lock[entry]);
         while (check_plate(entrance_queue[entry][0].plate) == false) {
+            printf(entrance_queue[entry][0].plate);
             pthread_cond_wait(&entrance_queue_condition[entry], &entrance_queue_lock[entry]);
         }
         pthread_mutex_unlock(&entrance_queue_lock[entry]);
         enter_car(entry);
-        printf("Entrance loop %d passed\n", entry);
     }
-    printf("Entrance loop %d ended\n", entry);
 };
 
 void *exit_loop(void *arg) {
