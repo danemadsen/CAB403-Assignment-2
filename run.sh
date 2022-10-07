@@ -1,1 +1,1 @@
-./simulator & ./manager
+./simulator & ./manager && fg
