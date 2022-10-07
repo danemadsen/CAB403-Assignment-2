@@ -112,7 +112,7 @@ int main(){
         pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
         pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
-        pthread_create(&entrance_loop_thread[0], NULL, entrance_loop, &nums[i]);
+        pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &nums[i]);
     }
     for (int i = 0; i < EXITS; i++) {
         nums[i] = i;
@@ -123,7 +123,6 @@ int main(){
         pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
-        // Initialise thread
         pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums[i]);
     }
     for (int i = 0; i < LEVELS; i++) {
@@ -138,14 +137,6 @@ int main(){
     sleep(1);
     car_generator_loop();
     return 0;
-};
-
-void new_car() {
-    printf("New car generated\n");
-    struct Car Auto;
-    get_random_plate(Auto.plate);
-    send_to_random_entrance(Auto);
-    printf("New car with plate %s has entered the car park\n", Auto.plate);
 };
 
 struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
@@ -190,9 +181,11 @@ void enter_car(int entry) {
             break;
         }
     }
+    printf("Car %s entered the parking lot at entrance %d and is parked on level %c\n", Auto.plate, entry, Auto.level);
 };
 
 void exit_car(int ext) {
+    printf("exit_car(%d)", ext);
     struct Car Auto = move_queue(exit_queue[ext], &exit_queue_lock[ext]);
     if (Auto.plate == NULL) return;
     // wait 10ms
@@ -201,6 +194,7 @@ void exit_car(int ext) {
     send_plate(Auto.plate, &Parking->exits[ext].LPR);
     open_boom_gate(&Parking->exits[ext].boom_gate);
     close_boom_gate(&Parking->exits[ext].boom_gate);
+    printf("Car %s has left the parking lot\n", Auto.plate);
 };
 
 void generate_plate(char *plate) {
@@ -333,7 +327,9 @@ void car_generator_loop() {
         // wait 1-100ms
         usleep((rand() % 100000) + 1000);
         // create a new car
-        new_car();
+        struct Car Auto;
+        get_random_plate(Auto.plate);
+        send_to_random_entrance(Auto);
     }
 };
 
@@ -358,20 +354,22 @@ void *temperature_loop(void *arg) {
 
 void *entrance_loop(void *arg) {
     int entry = *((int *) arg);
-    printf("Entrance %d thread created\n", entry);
+    printf("Entrance loop %d started\n", entry);
     while (1) {
+        printf("Entrance loop %d entered\n", entry);
         pthread_mutex_lock(&entrance_queue_lock[entry]);
         while (entrance_queue[entry][0].plate == NULL) {
             pthread_cond_wait(&entrance_queue_condition[entry], &entrance_queue_lock[entry]);
         }
         pthread_mutex_unlock(&entrance_queue_lock[entry]);
         enter_car(entry);
+        printf("Entrance loop %d passed\n", entry);
     }
+    printf("Entrance loop %d ended\n", entry);
 };
 
 void *exit_loop(void *arg) {
     int ext = *((int *) arg);
-    printf("Exit %d thread created\n", ext);
     while (1) {
         pthread_mutex_lock(&exit_queue_lock[ext]);
         while (exit_queue[ext][0].plate == NULL) {
