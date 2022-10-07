@@ -76,7 +76,6 @@ for more information.)
 int shm_fd;
 struct CarPark* Parking;
 double revenue;
-char[30] str_buffer;
 
 struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];

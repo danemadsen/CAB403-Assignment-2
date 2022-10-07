@@ -300,22 +300,24 @@ void *exit_loop(void *arg) {
 
 void display_loop() {
   while(1) {
-    char str_display[256] = "Current Revenue: %d\n\n", revenue;
+    printf("Current Revenue: %d\n\n", revenue);
     for (int i = 0; i < LEVELS; i++) {
-      str_buffer = "Level %d Vehicle Count: %d\n", i + 1, get_level_count(i);
-      strcat(str_display, str_buffer);
+      printf("Level %d Vehicle Count: %d\n", i + 1, get_level_count(i));
     }
-    strcat(str_display, "\n");
+    printf("\n");
     // Display the current status of all boom gates
     for (int i = 0; i < ENTRANCES; i++) {
-      str_buffer = "Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate);
-      strcat(str_display, str_buffer);
+      //pthread_mutex_lock(&Parking->entrances[i].boom_gate.mlock);
+      printf("Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate));
+      //pthread_mutex_unlock(&Parking->entrances[i].boom_gate.mlock);
     }
     for (int i = 0; i < EXITS; i++) {
-      str_buffer = "Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate);
-      strcat(str_display, str_buffer);
+      //pthread_mutex_lock(&Parking->exits[i].boom_gate.mlock);
+      printf("Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate));
+      //pthread_mutex_unlock(&Parking->exits[i].boom_gate.mlock);
     }
-    printf(str_display);
+    //wait 5s
+    sleep(5);
     //clear the console
     printf("\033[2J\033[1;1H");
   }
