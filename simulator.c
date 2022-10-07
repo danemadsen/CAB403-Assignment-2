@@ -89,6 +89,7 @@ the level LPR for the second time).
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include "simulator.h"
 #include "common.h"
@@ -112,7 +113,7 @@ int main(){
         pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
         pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
-        pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &nums[i]);
+        //pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &nums[i]);
     }
     for (int i = 0; i < EXITS; i++) {
         nums[i] = i;
@@ -123,19 +124,21 @@ int main(){
         pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
-        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums[i]);
+        //pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums[i]);
     }
     for (int i = 0; i < LEVELS; i++) {
         Parking->levels[i].temperature = 20;
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
-
+    pthread_create(&entrance_loop_thread[0], NULL, entrance_loop, &nums[0]);
+    pthread_create(&exit_loop_threads[0], NULL, exit_loop, &nums[0]);
     // Initialise thread of temperature loop function
-    pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
+    //pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
     // wait 1 seconds before starting the car loop
     sleep(1);
-    car_generator_loop();
+    //car_generator_loop();
+    while(1);
     return 0;
 };
 
@@ -181,7 +184,7 @@ void enter_car(int entry) {
             break;
         }
     }
-    printf("Car %s entered the parking lot at entrance %d and is parked on level %c\n", Auto.plate, entry, Auto.level);
+    //printf("Car %s entered the parking lot at entrance %d\n", Auto.plate, entry);
 };
 
 void exit_car(int ext) {
@@ -230,6 +233,25 @@ void get_random_plate_from_file(char *plate) {
     }
     // close the file
     fclose(file);
+};
+
+bool check_plate(char* plate) {
+    FILE* file = fopen("plates.txt", "r");
+    char c;
+    char* file_plate = malloc(7);
+    while ((c = fgetc(file)) != EOF) {
+        fseek(file, -1, SEEK_CUR);
+        fgets(file_plate, 7, file);
+        if (strcmp(plate, file_plate) == 0) {
+            free(file_plate);
+            fclose(file);
+            return true;
+        }
+        memset(file_plate, 0, 7);
+    }
+    free(file_plate);
+    fclose(file);
+    return false;
 };
 
 void get_random_plate(char* plate) {
@@ -358,7 +380,7 @@ void *entrance_loop(void *arg) {
     while (1) {
         printf("Entrance loop %d entered\n", entry);
         pthread_mutex_lock(&entrance_queue_lock[entry]);
-        while (entrance_queue[entry][0].plate == NULL) {
+        while (check_plate(entrance_queue[entry][0].plate) == false) {
             pthread_cond_wait(&entrance_queue_condition[entry], &entrance_queue_lock[entry]);
         }
         pthread_mutex_unlock(&entrance_queue_lock[entry]);

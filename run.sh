@@ -1,3 +1,1 @@
-./simulator
-./manager
-./firealarm
+./simulator & ./manager

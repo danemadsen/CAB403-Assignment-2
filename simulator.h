@@ -90,6 +90,7 @@ the level LPR for the second time).
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include "common.h"
 
 int shm_fd;
@@ -127,6 +128,7 @@ void exit_car(int ext);
 
 void generate_plate(char* plate);
 void get_random_plate_from_file(char* plate);
+bool check_plate(char* plate);
 void get_random_plate(char* plate);
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
 

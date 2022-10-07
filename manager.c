@@ -84,15 +84,18 @@ int main() {
   pthread_mutex_init(&revenue_lock, NULL);
 
   // Initialise the threads
-  for (int i = 0; i < ENTRANCES; i++) {
-    pthread_create(&entrance_threads[i], NULL, entrance_loop, &Parking->entrances[i]);
-  }
-  for (int i = 0; i < LEVELS; i++) {
-    pthread_create(&level_threads[i], NULL, level_loop, &Parking->levels[i]);
-  }
-  for (int i = 0; i < EXITS; i++) {
-    pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
-  }
+  //for (int i = 0; i < ENTRANCES; i++) {
+  //  pthread_create(&entrance_threads[i], NULL, entrance_loop, &Parking->entrances[i]);
+  //}
+  //for (int i = 0; i < LEVELS; i++) {
+  //  pthread_create(&level_threads[i], NULL, level_loop, &Parking->levels[i]);
+  //}
+  //for (int i = 0; i < EXITS; i++) {
+  //  pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
+  //}
+  pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
+  pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
+  pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
   while(1);
   return 0;
