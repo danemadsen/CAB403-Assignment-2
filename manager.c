@@ -302,16 +302,18 @@ void display_loop() {
   while(1) {
     char str_display[256] = "Current Revenue: %d\n\n", revenue;
     for (int i = 0; i < LEVELS; i++) {
-      str_buffer = "Level %d Vehicle Count: %d\n", i + 1, get_level_count(i)
+      str_buffer = "Level %d Vehicle Count: %d\n", i + 1, get_level_count(i);
       strcat(str_display, str_buffer);
     }
     strcat(str_display, "\n");
     // Display the current status of all boom gates
     for (int i = 0; i < ENTRANCES; i++) {
-      strcat(str_display, (char*) ("Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate)));
+      str_buffer = "Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate);
+      strcat(str_display, str_buffer);
     }
     for (int i = 0; i < EXITS; i++) {
-      strcat(str_display, (char*) ("Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate)));
+      str_buffer = "Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate);
+      strcat(str_display, str_buffer);
     }
     printf(str_display);
     //clear the console
