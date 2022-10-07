@@ -107,6 +107,10 @@ pthread_cond_t exit_queue_condition[EXITS];
 //pthread_mutex_t parked_cars_mlock;
 //pthread_cond_t parked_cars_condition;
 
+int incremental_seed;
+pthread_mutex_t seed_lock;
+int get_seed();
+
 pthread_t car_generator_loop_thread;
 //pthread_t car_sorter_loop_thread;
 pthread_t entrance_loop_thread[ENTRANCES];

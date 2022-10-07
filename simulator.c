@@ -98,9 +98,13 @@ int main(){
     shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     ftruncate(shm_fd, SIZE);
     Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    incremental_seed = 0;
 
+    int nums[ENTRANCES];
     // Initialize the mutexes and conditions
     for (int i = 0; i < ENTRANCES; i++) {
+        nums[i] = i;
+        Parking->entrances[i].boom_gate.status = 'C';
         pthread_mutex_init(&entrance_queue_lock[i], NULL);
         pthread_cond_init(&entrance_queue_condition[i], NULL);
         pthread_mutex_init(&Parking->entrances[i].LPR.mlock, NULL);
@@ -109,50 +113,41 @@ int main(){
         pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
         pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
+        pthread_create(&entrance_loop_thread[0], NULL, entrance_loop, &nums[i]);
     }
+    int nums2[EXITS];
     for (int i = 0; i < EXITS; i++) {
+        nums2[i] = i;
+        Parking->exits[i].boom_gate.status = 'C';
         pthread_mutex_init(&exit_queue_lock[i], NULL);
         pthread_cond_init(&exit_queue_condition[i], NULL);
         pthread_mutex_init(&Parking->exits[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
+        // Initialise thread
+        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums2[i]);
     }
     for (int i = 0; i < LEVELS; i++) {
+        Parking->levels[i].temperature = 20;
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
         pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
     }
 
-    // Initialise the boom_gates to have the status 'C'
-    for (int i = 0; i < ENTRANCES; i++) {
-        Parking->entrances[i].boom_gate.status = 'C';
-    }
-    for (int i = 0; i < EXITS; i++) {
-        Parking->exits[i].boom_gate.status = 'C';
-    }
-
-    // Initialise the temperature of each level to be 20
-    for (int i = 0; i < LEVELS; i++) {
-        Parking->levels[i].temperature = 20;
-    }
-    
-    // Initialise threads of loop functions
+    // Initialise thread of temperature loop function
     pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
-    for (int i = 0; i < ENTRANCES; i++) {
-        pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &i);
-    }
-    for (int i = 0; i < EXITS; i++) {
-        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &i);
-    }
+    // wait 1 seconds before starting the car loop
+    sleep(1);
     car_generator_loop();
     return 0;
 };
 
 void new_car() {
-    printf("New car generated");
+    printf("New car generated\n");
     struct Car Auto;
     get_random_plate(Auto.plate);
     send_to_random_entrance(Auto);
+    printf("New car with plate %s has entered the car park\n", Auto.plate);
 };
 
 struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
@@ -186,8 +181,8 @@ void enter_car(int entry) {
     // wait 10ms
     usleep(10000);
     send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 1].LPR);
-    srand(time(NULL));
-    Auto.departure_time = ((int) time(NULL)) + (rand() % 9901 + 100);
+    srand(get_seed());
+    Auto.departure_time = ((int) get_seed()) + (rand() % 9901 + 100);
     close_boom_gate(&Parking->entrances[entry].boom_gate);
     // Find the first available car_threads pthread_t
     for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
@@ -211,7 +206,7 @@ void exit_car(int ext) {
 };
 
 void generate_plate(char *plate) {
-    srand(time(NULL));
+    srand(get_seed());
     for (int i = 0; i < 3; i++) {
         plate[i] = (char) (rand() % 10 + '0');
     }
@@ -222,7 +217,7 @@ void generate_plate(char *plate) {
 };
 
 void get_random_plate_from_file(char *plate) {
-    srand(time(NULL));
+    srand(get_seed());
     // open the file
     FILE* file = fopen("plates.txt", "r");
     // get the number of lines in the file
@@ -246,7 +241,7 @@ void get_random_plate_from_file(char *plate) {
 };
 
 void get_random_plate(char* plate) {
-    srand(time(NULL));
+    srand(get_seed());
     if (rand() % 2 == 0) {
         generate_plate(plate);
     }
@@ -301,7 +296,7 @@ void close_boom_gate(struct BoomGate *boom_gate) {
 };
 
 void send_to_random_entrance(struct Car Auto) {
-    srand(time(NULL));
+    srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_queue_lock[random_entrance]);
     for (int i = 0; i < ENTRANCES; i++) {
@@ -315,7 +310,7 @@ void send_to_random_entrance(struct Car Auto) {
 };
 
 void send_to_random_exit(struct Car Auto) {
-    srand(time(NULL));
+    srand(get_seed());
     int random_exit = rand() % EXITS;
     pthread_mutex_lock(&exit_queue_lock[random_exit]);
     for (int i = 0; i < EXITS; i++) {
@@ -329,15 +324,14 @@ void send_to_random_exit(struct Car Auto) {
 };
 
 void set_random_temperature(int lvl){
-    srand(time(NULL)*(lvl+1));
+    srand(get_seed()*(lvl+1));
     // add a ramdom value between -3 and 3 to the current temperature
     Parking->levels[lvl].temperature += rand() % 7 - 3;
 };
 
 void car_generator_loop() {
     while (1) {
-        printf("Generator is running");
-        srand(time(NULL));
+        srand(get_seed());
         // wait 1-100ms
         usleep((rand() % 100000) + 1000);
         // create a new car
@@ -345,9 +339,17 @@ void car_generator_loop() {
     }
 };
 
+int get_seed() {
+    pthread_mutex_lock(&seed_lock);
+    int seed = incremental_seed * time(NULL);
+    incremental_seed++;
+    pthread_mutex_unlock(&seed_lock);
+    return seed;
+};
+
 void *temperature_loop(void *arg) {
     while (1) {
-        printf("Temperature is running\n");
+        srand(get_seed());
         // wait 1-5ms
         usleep((rand() % 5000) + 1000);
         for (int i = 0; i < LEVELS; i++) {
@@ -358,7 +360,7 @@ void *temperature_loop(void *arg) {
 
 void *entrance_loop(void *arg) {
     int entry = *((int *) arg);
-    printf("Entrance %d is running\n", entry);
+    printf("Entrance %d thread created\n", entry);
     while (1) {
         pthread_mutex_lock(&entrance_queue_lock[entry]);
         while (entrance_queue[entry][0].plate == NULL) {
@@ -371,7 +373,7 @@ void *entrance_loop(void *arg) {
 
 void *exit_loop(void *arg) {
     int ext = *((int *) arg);
-    printf("Exit %d is running\n", ext);
+    printf("Exit %d thread created\n", ext);
     while (1) {
         pthread_mutex_lock(&exit_queue_lock[ext]);
         while (exit_queue[ext][0].plate == NULL) {
@@ -384,7 +386,7 @@ void *exit_loop(void *arg) {
 
 void *car_instance(void *arg) {
     struct Car Auto = *((struct Car *) arg);
-    printf("Car %s is running\n", Auto.plate);
+    srand(get_seed());
     // wait 1-100ms
     usleep((rand() % 100000) + 1000);
     // send the car to a random exit
