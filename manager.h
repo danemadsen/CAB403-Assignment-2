@@ -76,6 +76,7 @@ for more information.)
 int shm_fd;
 struct CarPark* Parking;
 double revenue;
+int nums[MAX(MAX(ENTRANCES, EXITS), LEVELS)];
 
 struct Car parked_cars[LEVELS][LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];

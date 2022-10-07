@@ -85,19 +85,24 @@ int main() {
 
   // Initialise the threads
   for (int i = 0; i < ENTRANCES; i++) {
-    pthread_create(&entrance_threads[i], NULL, entrance_loop, &i);
+    nums[i] = i;
+    pthread_create(&entrance_threads[i], NULL, entrance_loop, &nums[i]);
   }
   for (int i = 0; i < LEVELS; i++) {
-    pthread_create(&level_threads[i], NULL, level_loop, &i);
+    nums[i] = i;
+    pthread_create(&level_threads[i], NULL, level_loop, &nums[i]);
   }
   for (int i = 0; i < EXITS; i++) {
-    pthread_create(&exit_threads[i], NULL, exit_loop, &i);
+    nums[i] = i;
+    pthread_create(&exit_threads[i], NULL, exit_loop, &nums[i]);
   }
-  display_loop();
+  //display_loop();
+  while(1);
   return 0;
 }
 
 void charge_car(struct Car *car) {
+  printf("Charging car %d\n", car->plate);
   // Calculate the time the car has been in the car park
   int time_in_parking_lot = car->departure_time - car->arrival_time;
   // Calculate the cost of the car's stay
@@ -106,6 +111,7 @@ void charge_car(struct Car *car) {
   pthread_mutex_lock(&revenue_lock);
   revenue += cost;
   pthread_mutex_unlock(&revenue_lock);
+  printf("Car %d has left the car park after %d seconds. It has been charged $%.2f.\n", car->plate, time_in_parking_lot, cost);
 };
 
 void add_car(struct Car Auto){
@@ -246,6 +252,7 @@ void *entrance_loop(void *arg) {
   struct Entrance *entrance = (struct Entrance *)arg;
   char lvl;
   while(1) {
+    printf("Entrance loop\n");
     pthread_mutex_lock(&entrance->LPR.mlock);
     pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     if (check_plate(entrance->LPR.plate) && check_space(&lvl)) {
@@ -266,6 +273,7 @@ void *entrance_loop(void *arg) {
 void *level_loop(void *arg) {
   struct Level *level = (struct Level *)arg;
   while(1) {
+    printf("Level Loop\n");
     struct Car Auto;
     pthread_mutex_lock(&level->LPR.mlock);
     pthread_cond_wait(&level->LPR.condition, &level->LPR.mlock);
@@ -282,6 +290,7 @@ void *level_loop(void *arg) {
 void *exit_loop(void *arg) {
   struct Exit *exit = (struct Exit *)arg;
   while(1) {
+    printf("Exit Loop\n");
     struct Car Auto;
     pthread_mutex_lock(&exit->LPR.mlock);
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
@@ -299,6 +308,7 @@ void *exit_loop(void *arg) {
 };
 
 void display_loop() {
+  revenue = 0;
   while(1) {
     printf("Current Revenue: %d\n\n", revenue);
     for (int i = 0; i < LEVELS; i++) {

@@ -94,6 +94,7 @@ the level LPR for the second time).
 
 int shm_fd;
 struct CarPark* Parking;
+int nums[MAX(ENTRANCES, EXITS)];
 
 struct Car entrance_queue[ENTRANCES][LEVEL_CAPACITY];
 pthread_mutex_t entrance_queue_lock[ENTRANCES];

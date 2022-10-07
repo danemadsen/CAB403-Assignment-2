@@ -44,6 +44,8 @@ Student Email: n10983864@qut.edu.au
 #define ENTRANCES 5
 #define EXITS 5
 
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 struct Car{
     char plate[6];
     int arrival_time;

@@ -100,7 +100,6 @@ int main(){
     Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     incremental_seed = 0;
 
-    int nums[ENTRANCES];
     // Initialize the mutexes and conditions
     for (int i = 0; i < ENTRANCES; i++) {
         nums[i] = i;
@@ -115,9 +114,8 @@ int main(){
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
         pthread_create(&entrance_loop_thread[0], NULL, entrance_loop, &nums[i]);
     }
-    int nums2[EXITS];
     for (int i = 0; i < EXITS; i++) {
-        nums2[i] = i;
+        nums[i] = i;
         Parking->exits[i].boom_gate.status = 'C';
         pthread_mutex_init(&exit_queue_lock[i], NULL);
         pthread_cond_init(&exit_queue_condition[i], NULL);
@@ -126,7 +124,7 @@ int main(){
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
         // Initialise thread
-        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums2[i]);
+        pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums[i]);
     }
     for (int i = 0; i < LEVELS; i++) {
         Parking->levels[i].temperature = 20;
