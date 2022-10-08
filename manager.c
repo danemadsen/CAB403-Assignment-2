@@ -75,7 +75,7 @@ for more information.)
 
 int main() {
   // wait until a shared memory segment named PARKING is created
-  while((shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666)) == -1) {
+  while((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
     printf("Waiting for shared memory segment to be created...\n");
     sleep(1);
     printf("\033[2J\033[1;1H");
