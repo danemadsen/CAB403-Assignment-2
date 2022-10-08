@@ -84,7 +84,6 @@ int main() {
   
   revenue = 0;
 
-  Parking->exits[0].boom_gate.status = 'D';
   //Initialise the mutexes and conditions
   pthread_mutex_init(&parked_cars_mlock, NULL);
   pthread_cond_init(&parked_cars_condition, NULL);
@@ -103,7 +102,7 @@ int main() {
   pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
   pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
-  display_loop();
+  //display_loop();
   while(1);
   return 0;
 }
