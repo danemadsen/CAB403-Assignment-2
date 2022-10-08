@@ -105,9 +105,9 @@ int main() {
   return 0;
 }
 
-void charge_car(struct Car *car) {
+void charge_car(Car_t *Auto) {
   // Calculate the time the car has been in the car park
-  int time_in_parking_lot = car->departure_time - car->arrival_time;
+  int time_in_parking_lot = Auto->departure_time - Auto->arrival_time;
   // Calculate the cost of the car's stay
   double cost = time_in_parking_lot * RATE;
   //Increment the total revenue
@@ -116,7 +116,7 @@ void charge_car(struct Car *car) {
   pthread_mutex_unlock(&revenue_lock);
 };
 
-void add_car(struct Car Auto){
+void add_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
       if (parked_cars[(int) Auto.level][i].plate == NULL) {
@@ -128,12 +128,12 @@ void add_car(struct Car Auto){
   pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-void remove_car(struct Car Auto) {
+void remove_car(Car_t Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
       if (parked_cars[i][j].plate == Auto.plate && parked_cars[i][j].level != Auto.level) {
-        parked_cars[i][j] = (struct Car) {0};
+        parked_cars[i][j] = (Car_t) {0};
         break;
       }
     }
@@ -142,7 +142,7 @@ void remove_car(struct Car Auto) {
   pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-void get_car(struct Car *Auto) {
+void get_car(Car_t *Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
@@ -189,7 +189,7 @@ bool check_space(char *lvl) {
   return false;
 };
 
-void raise_boom_gate(struct BoomGate *boom_gate) {
+void raise_boom_gate(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
   if (boom_gate->status == 'O') boom_gate->status = 'L';
   while (boom_gate->status != 'C') {
@@ -200,7 +200,7 @@ void raise_boom_gate(struct BoomGate *boom_gate) {
   pthread_cond_broadcast(&boom_gate->condition);
 };
 
-void lower_boom_gate(struct BoomGate *boom_gate) {
+void lower_boom_gate(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
   if (boom_gate->status == 'C') boom_gate->status = 'R';
   while (boom_gate->status != 'O') {
@@ -211,21 +211,21 @@ void lower_boom_gate(struct BoomGate *boom_gate) {
   pthread_cond_broadcast(&boom_gate->condition);
 };
 
-char get_boom_gate_status(struct BoomGate *boom_gate) {
+char get_boom_gate_status(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
   char status = boom_gate->status;
   pthread_mutex_unlock(&boom_gate->mlock);
   return status;
 };
 
-void set_sign(struct InformationSign *sign, char signal) {
+void set_sign(Sign_t *sign, char signal) {
   pthread_mutex_lock(&sign->mlock);
   sign->display = signal;
   pthread_mutex_unlock(&sign->mlock);
   pthread_cond_broadcast(&sign->condition);
 };
 
-int get_level_index(struct Level *lvl) {
+int get_level_index(Level_t *lvl) {
   for (int i = 0; i < LEVELS; i++) {
     if (lvl == &Parking->levels[i]) {
       return i;
@@ -247,7 +247,7 @@ int get_level_count(int level) {
 };
 
 void *entrance_loop(void *arg) {
-  struct Entrance *entrance = (struct Entrance *)arg;
+  Entrance_t *entrance = (Entrance_t *)arg;
   char lvl;
   while(1) {
     pthread_mutex_lock(&entrance->LPR.mlock);
@@ -271,9 +271,9 @@ void *entrance_loop(void *arg) {
 };
 
 void *level_loop(void *arg) {
-  struct Level *level = (struct Level *)arg;
+  Level_t *level = (Level_t *)arg;
   while(1) {
-    struct Car Auto;
+    Car_t Auto;
     pthread_mutex_lock(&level->LPR.mlock);
     pthread_cond_wait(&level->LPR.condition, &level->LPR.mlock);
     strcpy(Auto.plate, level->LPR.plate);
@@ -287,9 +287,9 @@ void *level_loop(void *arg) {
 };
 
 void *exit_loop(void *arg) {
-  struct Exit *exit = (struct Exit *)arg;
+  Exit_t *exit = (Exit_t *)arg;
   while(1) {
-    struct Car Auto;
+    Car_t Auto;
     pthread_mutex_lock(&exit->LPR.mlock);
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);

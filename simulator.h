@@ -94,35 +94,30 @@ the level LPR for the second time).
 #include "common.h"
 
 int shm_fd;
-struct CarPark* Parking;
+CarPark_t* Parking;
 int nums[MAX(ENTRANCES, EXITS)];
 
-struct Car entrance_queue[ENTRANCES][LEVEL_CAPACITY];
+Car_t entrance_queue[ENTRANCES][LEVEL_CAPACITY];
 pthread_mutex_t entrance_queue_lock[ENTRANCES];
 pthread_cond_t entrance_queue_condition[ENTRANCES];
 
-struct Car exit_queue[EXITS][LEVEL_CAPACITY];
+Car_t exit_queue[EXITS][LEVEL_CAPACITY];
 pthread_mutex_t exit_queue_lock[EXITS];
 pthread_cond_t exit_queue_condition[EXITS];
-
-//struct Car parked_cars[LEVELS*LEVEL_CAPACITY];
-//pthread_mutex_t parked_cars_mlock;
-//pthread_cond_t parked_cars_condition;
 
 int incremental_seed;
 pthread_mutex_t seed_lock;
 int get_seed();
 
 pthread_t car_generator_loop_thread;
-//pthread_t car_sorter_loop_thread;
 pthread_t entrance_loop_thread[ENTRANCES];
 pthread_t exit_loop_threads[EXITS];
 pthread_t temperature_loop_thread;
 pthread_t car_threads[LEVELS*LEVEL_CAPACITY];
 
 void new_car();
-void add_car(struct Car Auto);
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
+void add_car(Car_t Auto);
+Car_t move_queue(Car_t Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
 void enter_car(int entry);
 void exit_car(int ext);
 
@@ -130,15 +125,15 @@ void generate_plate(char* plate);
 void get_random_plate_from_file(char* plate);
 bool check_plate(char* plate);
 void get_random_plate(char* plate);
-void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
+void send_plate(char plate[6], LPR_t *lpr);
 
-char get_display(struct InformationSign *sign);
+char get_display(Sign_t *sign);
 
-void open_boom_gate(struct BoomGate *boom_gate);
-void close_boom_gate(struct BoomGate *boom_gate);
+void open_boom_gate(BoomGate_t *boom_gate);
+void close_boom_gate(BoomGate_t *boom_gate);
 
-void send_to_random_entrance(struct Car Auto);
-void send_to_random_exit(struct Car Auto);
+void send_to_random_entrance(Car_t Auto);
+void send_to_random_exit(Car_t Auto);
 
 void set_random_temperature(int lvl);
 

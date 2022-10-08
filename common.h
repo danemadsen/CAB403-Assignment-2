@@ -47,7 +47,7 @@ Student Email: n10983864@qut.edu.au
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct Car Car_t;
-typedef struct LicensePlateRecognition LPR_t;
+typedef struct LicencePlateRecognition LPR_t;
 typedef struct BoomGate BoomGate_t;
 typedef struct InformationSign Sign_t;
 typedef struct Entrance Entrance_t;

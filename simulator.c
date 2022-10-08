@@ -141,9 +141,9 @@ int main(){
     return 0;
 };
 
-struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
+Car_t move_queue(Car_t Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
     pthread_mutex_lock(lock);
-    struct Car Auto = Queue[0];
+    Car_t Auto = Queue[0];
     for (int i = 1; i < LEVEL_CAPACITY; i++) {
         if (Queue[i].plate == NULL) {
             break;
@@ -158,7 +158,7 @@ struct Car move_queue(struct Car Queue[LEVEL_CAPACITY], pthread_mutex_t *lock) {
 
 void enter_car(int entry) {
     // Get the first car in the queue
-    struct Car Auto = move_queue(entrance_queue[entry], &entrance_queue_lock[entry]);
+    Car_t Auto = move_queue(entrance_queue[entry], &entrance_queue_lock[entry]);
     if (Auto.plate == NULL) return;
     // wait 2ms
     usleep(2000);
@@ -188,7 +188,7 @@ void enter_car(int entry) {
 
 void exit_car(int ext) {
     //printf("exit_car(%d)", ext);
-    struct Car Auto = move_queue(exit_queue[ext], &exit_queue_lock[ext]);
+    Car_t Auto = move_queue(exit_queue[ext], &exit_queue_lock[ext]);
     if (Auto.plate == NULL) return;
     // wait 10ms
     usleep(10000);
@@ -263,14 +263,14 @@ void get_random_plate(char* plate) {
     }
 };
 
-void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
-    pthread_mutex_lock(&LPR->mlock);
-    strcpy(LPR->plate, plate);
-    pthread_mutex_unlock(&LPR->mlock);
-    pthread_cond_signal(&LPR->condition);
+void send_plate(char plate[6], LPR_t *lpr) {
+    pthread_mutex_lock(&lpr->mlock);
+    strcpy(lpr->plate, plate);
+    pthread_mutex_unlock(&lpr->mlock);
+    pthread_cond_signal(&lpr->condition);
 };
 
-char get_display(struct InformationSign *sign) {
+char get_display(Sign_t *sign) {
     pthread_mutex_lock(&sign->mlock);
     printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
     printf("Parking: %d\n", Parking->entrances[1].information_sign.display);
@@ -285,7 +285,7 @@ char get_display(struct InformationSign *sign) {
     return display;
 };
 
-void open_boom_gate(struct BoomGate *boom_gate) {
+void open_boom_gate(BoomGate_t *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     if(boom_gate->status == 'L') boom_gate->status = 'C';
     while (boom_gate->status != 'R') {
@@ -298,7 +298,7 @@ void open_boom_gate(struct BoomGate *boom_gate) {
     pthread_cond_signal(&boom_gate->condition);
 };
 
-void close_boom_gate(struct BoomGate *boom_gate) {
+void close_boom_gate(BoomGate_t *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
     if (boom_gate->status == 'R') boom_gate->status = 'O';
     while (boom_gate->status != 'L') {
@@ -311,7 +311,7 @@ void close_boom_gate(struct BoomGate *boom_gate) {
     pthread_cond_signal(&boom_gate->condition);
 };
 
-void send_to_random_entrance(struct Car Auto) {
+void send_to_random_entrance(Car_t Auto) {
     srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_queue_lock[random_entrance]);
@@ -325,7 +325,7 @@ void send_to_random_entrance(struct Car Auto) {
     pthread_mutex_unlock(&entrance_queue_lock[random_entrance]);
 };
 
-void send_to_random_exit(struct Car Auto) {
+void send_to_random_exit(Car_t Auto) {
     srand(get_seed());
     int random_exit = rand() % EXITS;
     pthread_mutex_lock(&exit_queue_lock[random_exit]);
@@ -351,7 +351,7 @@ void car_generator_loop() {
         // wait 1-100ms
         usleep((rand() % 100000) + 1000);
         // create a new car
-        struct Car Auto;
+        Car_t Auto;
         get_random_plate(Auto.plate);
         send_to_random_entrance(Auto);
     }
@@ -402,7 +402,7 @@ void *exit_loop(void *arg) {
 };
 
 void *car_instance(void *arg) {
-    struct Car Auto = *((struct Car *) arg);
+    Car_t Auto = *((Car_t *) arg);
     srand(get_seed());
     // wait 1-100ms
     usleep((rand() % 100000) + 1000);
