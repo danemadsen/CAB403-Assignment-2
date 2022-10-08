@@ -84,6 +84,7 @@ int main() {
   
   revenue = 0;
 
+  Parking->exits[0].boom_gate.status = 'D';
   //Initialise the mutexes and conditions
   pthread_mutex_init(&parked_cars_mlock, NULL);
   pthread_cond_init(&parked_cars_condition, NULL);
@@ -103,7 +104,7 @@ int main() {
   pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
-  //while(1);
+  while(1);
   return 0;
 }
 
@@ -227,8 +228,8 @@ char get_boom_gate_status(struct BoomGate *boom_gate) {
 void set_sign(struct InformationSign *sign, char signal) {
     pthread_mutex_lock(&sign->mlock);
     sign->display = signal;
-    pthread_cond_signal(&sign->condition);
     pthread_mutex_unlock(&sign->mlock);
+    pthread_cond_signal(&sign->condition);
 };
 
 int get_level_index(struct Level *lvl) {
@@ -257,8 +258,10 @@ void *entrance_loop(void *arg) {
   char lvl;
   while(1) {
     pthread_mutex_lock(&entrance->LPR.mlock);
-    pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
-    if (check_plate(entrance->LPR.plate) && check_space(&lvl)) {
+    while(check_plate(entrance->LPR.plate) == false) {
+      pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
+    }
+    if (check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms

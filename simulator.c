@@ -164,7 +164,7 @@ void enter_car(int entry) {
     // send the plate to the LPR
     send_plate(Auto.plate, &Parking->entrances[entry].LPR);
     // wait for a digital sign signal before proceeding
-    Auto.level = get_display(Parking->entrances[entry].information_sign);
+    Auto.level = get_display(&Parking->entrances[entry].information_sign);
     // check if Auto.level is an approved char
     if (Auto.level < '1' || Auto.level > '5') return;
     open_boom_gate(&Parking->entrances[entry].boom_gate);
@@ -265,15 +265,18 @@ void get_random_plate(char* plate) {
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
     pthread_mutex_lock(&LPR->mlock);
     strcpy(LPR->plate, plate);
-    pthread_cond_signal(&LPR->condition);
     pthread_mutex_unlock(&LPR->mlock);
+    pthread_cond_signal(&LPR->condition);
 };
 
-char get_display(struct InformationSign sign) {
-    pthread_mutex_lock(&sign.mlock);
-    pthread_cond_wait(&sign.condition, &sign.mlock);
-    char display = sign.display;
-    pthread_mutex_unlock(&sign.mlock);
+char get_display(struct InformationSign *sign) {
+    pthread_mutex_lock(&sign->mlock);
+    while(sign->display == '\0') {
+        pthread_cond_wait(&sign->condition, &sign->mlock);
+    }
+    char display = sign->display;
+    sign->display = '\0';
+    pthread_mutex_unlock(&sign->mlock);
     return display;
 };
 

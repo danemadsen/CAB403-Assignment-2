@@ -132,7 +132,7 @@ bool check_plate(char* plate);
 void get_random_plate(char* plate);
 void send_plate(char plate[6], struct LicencePlateRecognition *LPR);
 
-char get_display(struct InformationSign sign);
+char get_display(struct InformationSign *sign);
 
 void open_boom_gate(struct BoomGate *boom_gate);
 void close_boom_gate(struct BoomGate *boom_gate);
