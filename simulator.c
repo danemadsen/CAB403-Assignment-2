@@ -282,32 +282,28 @@ char get_display(struct InformationSign *sign) {
 
 void open_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
+    if(boom_gate->status == 'L') boom_gate->status = 'C';
     while (boom_gate->status != 'R') {
-        if(boom_gate->status == 'L') {
-            boom_gate->status = 'C';
-        }
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
     usleep(10000);
     boom_gate->status = 'O';
-    pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
+    pthread_cond_signal(&boom_gate->condition);
 };
 
 void close_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
+    if (boom_gate->status == 'R') boom_gate->status = 'O';
     while (boom_gate->status != 'L') {
-        if (boom_gate->status == 'R') {
-            boom_gate->status = 'O';
-        }
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
     usleep(10000);
     boom_gate->status = 'C';
-    pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
+    pthread_cond_signal(&boom_gate->condition);
 };
 
 void send_to_random_entrance(struct Car Auto) {

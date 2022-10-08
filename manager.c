@@ -102,8 +102,8 @@ int main() {
   pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
   pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
-  //display_loop();
-  while(1);
+  display_loop();
+  //while(1);
   return 0;
 }
 
@@ -193,28 +193,24 @@ bool check_space(char *lvl) {
 
 void raise_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
+    if (boom_gate->status == 'O') boom_gate->status = 'L';
     while (boom_gate->status != 'C') {
-      if (boom_gate->status == 'O') {
-          boom_gate->status = 'L';
-      }
       pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     boom_gate->status = 'R';
-    pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
+    pthread_cond_signal(&boom_gate->condition);
 };
 
 void lower_boom_gate(struct BoomGate *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
+    if (boom_gate->status == 'C') boom_gate->status = 'R';
     while (boom_gate->status != 'O') {
-      if (boom_gate->status == 'C') {
-          boom_gate->status = 'L';
-      }
       pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     boom_gate->status = 'L';
-    pthread_cond_signal(&boom_gate->condition);
     pthread_mutex_unlock(&boom_gate->mlock);
+    pthread_cond_signal(&boom_gate->condition);
 };
 
 char get_boom_gate_status(struct BoomGate *boom_gate) {
@@ -320,17 +316,13 @@ void display_loop() {
     printf("\n");
     // Display the current status of all boom gates
     for (int i = 0; i < ENTRANCES; i++) {
-      //pthread_mutex_lock(&Parking->entrances[i].boom_gate.mlock);
       printf("Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate));
-      //pthread_mutex_unlock(&Parking->entrances[i].boom_gate.mlock);
     }
     for (int i = 0; i < EXITS; i++) {
-      //pthread_mutex_lock(&Parking->exits[i].boom_gate.mlock);
       printf("Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate));
-      //pthread_mutex_unlock(&Parking->exits[i].boom_gate.mlock);
     }
-    //wait 5s
-    sleep(5);
+    //wait 1s
+    sleep(1);
     //clear the console
     printf("\033[2J\033[1;1H");
   }
