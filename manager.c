@@ -255,9 +255,7 @@ void *entrance_loop(void *arg) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
     if (check_space(&lvl)) {
-      printf("Sign 1: %c\nInt 1:%d\n", entrance->information_sign.display, entrance->information_sign.display);
       set_sign(&entrance->information_sign, lvl);
-      printf("Sign 2: %c\nInt 2:%d\n", entrance->information_sign.display, entrance->information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);
