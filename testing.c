@@ -18,4 +18,7 @@ int main(){
     void* ptr = mmap(NULL, 2930, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     // print the size of pthread_mutex_t
     shm_unlink("PARKING");
+
+    char c = '1';
+    printf("%d\n%c\n", c, 49);
 }

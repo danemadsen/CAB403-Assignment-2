@@ -276,6 +276,7 @@ char get_display(struct InformationSign *sign) {
         pthread_cond_wait(&sign->condition, &sign->mlock);
         printf("get_display: sign->display = %c\n", sign->display);
     }
+    printf("passed");
     char display = sign->display;
     sign->display = '\0';
     pthread_mutex_unlock(&sign->mlock);

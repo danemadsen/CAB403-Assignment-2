@@ -4,3 +4,5 @@ simulator
 .fuse_hidden0000037600000003
 .fuse_hidden0000008200000001
 testing
+.fuse_hidden0000018800000008
+.fuse_hidden0000019100000005
