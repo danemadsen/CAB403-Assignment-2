@@ -136,7 +136,7 @@ int main(){
     // Initialise thread of temperature loop function
     //pthread_create(&temperature_loop_thread, NULL, temperature_loop, NULL);
     car_generator_loop();
-    while(1);
+    //while(1);
     return 0;
 };
 
