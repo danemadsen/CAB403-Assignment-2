@@ -105,6 +105,9 @@ Car_t exit_queue[EXITS][LEVEL_CAPACITY];
 pthread_mutex_t exit_queue_lock[EXITS];
 pthread_cond_t exit_queue_condition[EXITS];
 
+pthread_mutexattr_t shared_mutex_attr;
+pthread_condattr_t shared_cond_attr;
+
 int incremental_seed;
 pthread_mutex_t seed_lock;
 int get_seed();

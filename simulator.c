@@ -102,36 +102,43 @@ int main(){
     Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     incremental_seed = 0;
 
+    // initialise the mutexes and conditions to be PTHREAD_PROCESS_SHARED
+    pthread_mutexattr_init(&shared_mutex_attr);
+    pthread_mutexattr_setpshared(&shared_mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_condattr_init(&shared_cond_attr);
+    pthread_condattr_setpshared(&shared_cond_attr, PTHREAD_PROCESS_SHARED);
+
     // Initialize the mutexes and conditions
     for (int i = 0; i < ENTRANCES; i++) {
         nums[i] = i;
         Parking->entrances[i].boom_gate.status = 'C';
-        pthread_mutex_init(&entrance_queue_lock[i], NULL);
-        pthread_cond_init(&entrance_queue_condition[i], NULL);
-        pthread_mutex_init(&Parking->entrances[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].LPR.condition, NULL);
-        pthread_mutex_init(&Parking->entrances[i].boom_gate.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].boom_gate.condition, NULL);
-        pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, NULL);
-        pthread_cond_init(&Parking->entrances[i].information_sign.condition, NULL);
+        pthread_mutex_init(&entrance_queue_lock[i], &shared_mutex_attr);
+        pthread_cond_init(&entrance_queue_condition[i], &shared_cond_attr);
+        pthread_mutex_init(&Parking->entrances[i].LPR.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->entrances[i].LPR.condition, &shared_cond_attr);
+        pthread_mutex_init(&Parking->entrances[i].boom_gate.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->entrances[i].boom_gate.condition, &shared_cond_attr);
+        pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->entrances[i].information_sign.condition, &shared_cond_attr);
         //pthread_create(&entrance_loop_thread[i], NULL, entrance_loop, &nums[i]);
     }
     for (int i = 0; i < EXITS; i++) {
         nums[i] = i;
         Parking->exits[i].boom_gate.status = 'C';
-        pthread_mutex_init(&exit_queue_lock[i], NULL);
-        pthread_cond_init(&exit_queue_condition[i], NULL);
-        pthread_mutex_init(&Parking->exits[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->exits[i].LPR.condition, NULL);
-        pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, NULL);
-        pthread_cond_init(&Parking->exits[i].boom_gate.condition, NULL);
+        pthread_mutex_init(&exit_queue_lock[i], &shared_mutex_attr);
+        pthread_cond_init(&exit_queue_condition[i], &shared_cond_attr);
+        pthread_mutex_init(&Parking->exits[i].LPR.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->exits[i].LPR.condition, &shared_cond_attr);
+        pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->exits[i].boom_gate.condition, &shared_cond_attr);
         //pthread_create(&exit_loop_threads[i], NULL, exit_loop, &nums[i]);
     }
     for (int i = 0; i < LEVELS; i++) {
         Parking->levels[i].temperature = 20;
-        pthread_mutex_init(&Parking->levels[i].LPR.mlock, NULL);
-        pthread_cond_init(&Parking->levels[i].LPR.condition, NULL);
+        pthread_mutex_init(&Parking->levels[i].LPR.mlock, &shared_mutex_attr);
+        pthread_cond_init(&Parking->levels[i].LPR.condition, &shared_cond_attr);
     }
+
     pthread_create(&entrance_loop_thread[0], NULL, entrance_loop, &nums[0]);
     pthread_create(&exit_loop_threads[0], NULL, exit_loop, &nums[0]);
     // Initialise thread of temperature loop function
