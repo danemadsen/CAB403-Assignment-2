@@ -71,9 +71,15 @@ for more information.)
 #include "manager.h"
 #include "common.h"
 
+
+
 int main() {
-  // Setup the shared memory segement
-  shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+  // wait until a shared memory segment named PARKING is created
+  while((shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666)) == -1) {
+    printf("Waiting for shared memory segment to be created...\n");
+    sleep(1);
+    printf("\033[2J\033[1;1H");
+  }
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
   revenue = 0;
@@ -97,7 +103,7 @@ int main() {
   pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
-  while(1);
+  //while(1);
   return 0;
 }
 
@@ -305,7 +311,7 @@ void *exit_loop(void *arg) {
 void display_loop() {
   revenue = 0;
   while(1) {
-    printf("Current Revenue: %d\n\n", revenue);
+    printf("Current Revenue: %lf\n\n", revenue);
     for (int i = 0; i < LEVELS; i++) {
       printf("Level %d Vehicle Count: %d\n", i + 1, get_level_count(i));
     }
