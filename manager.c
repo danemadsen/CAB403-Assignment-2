@@ -181,9 +181,7 @@ bool check_space(char *lvl) {
   for (int i = 0; i < (LEVELS); i++) {
     for (int j = 0; j < (LEVEL_CAPACITY); j++) {
       if (parked_cars[i][j].plate[0] == '\0') {
-      printf("Space found on level %d\n", i+1);
       *lvl = i + 49;
-      printf("Level is %c\n", *lvl);
       pthread_mutex_unlock(&parked_cars_mlock);
       return true;
       }
@@ -260,7 +258,6 @@ void *entrance_loop(void *arg) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
     if (check_space(&lvl)) {
-      printf("Level %c is available\n", lvl);
       set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
