@@ -95,6 +95,7 @@ the level LPR for the second time).
 #include "common.h"
 
 int main(){
+    shm_unlink(SHM_NAME);
     // Setup the shared memory segement
     shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     ftruncate(shm_fd, SIZE);
@@ -273,6 +274,7 @@ char get_display(struct InformationSign *sign) {
     pthread_mutex_lock(&sign->mlock);
     while(sign->display == '\0') {
         pthread_cond_wait(&sign->condition, &sign->mlock);
+        printf("get_display: sign->display = %c\n", sign->display);
     }
     char display = sign->display;
     sign->display = '\0';

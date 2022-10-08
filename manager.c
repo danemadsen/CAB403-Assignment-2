@@ -119,15 +119,15 @@ void charge_car(struct Car *car) {
 };
 
 void add_car(struct Car Auto){
-    pthread_mutex_lock(&parked_cars_mlock);
-    for (int i = 0; i < LEVEL_CAPACITY; i++) {
-        if (parked_cars[(int) Auto.level][i].plate == NULL) {
-            parked_cars[(int) Auto.level][i] = Auto;
-            break;
-        }
-    }
-    pthread_cond_signal(&parked_cars_condition);
-    pthread_mutex_unlock(&parked_cars_mlock);
+  pthread_mutex_lock(&parked_cars_mlock);
+  for (int i = 0; i < LEVEL_CAPACITY; i++) {
+      if (parked_cars[(int) Auto.level][i].plate == NULL) {
+          parked_cars[(int) Auto.level][i] = Auto;
+          break;
+      }
+  }
+  pthread_cond_signal(&parked_cars_condition);
+  pthread_mutex_unlock(&parked_cars_mlock);
 };
 
 void remove_car(struct Car Auto) {
@@ -158,22 +158,22 @@ void get_car(struct Car *Auto) {
 };
 
 bool check_plate(char* plate) {
-    FILE* file = fopen("plates.txt", "r");
-    char c;
-    char* file_plate = malloc(7);
-    while ((c = fgetc(file)) != EOF) {
-        fseek(file, -1, SEEK_CUR);
-        fgets(file_plate, 7, file);
-        if (strcmp(plate, file_plate) == 0) {
-            free(file_plate);
-            fclose(file);
-            return true;
-        }
-        memset(file_plate, 0, 7);
-    }
-    free(file_plate);
-    fclose(file);
-    return false;
+  FILE* file = fopen("plates.txt", "r");
+  char c;
+  char* file_plate = malloc(7);
+  while ((c = fgetc(file)) != EOF) {
+      fseek(file, -1, SEEK_CUR);
+      fgets(file_plate, 7, file);
+      if (strcmp(plate, file_plate) == 0) {
+          free(file_plate);
+          fclose(file);
+          return true;
+      }
+      memset(file_plate, 0, 7);
+  }
+  free(file_plate);
+  fclose(file);
+  return false;
 };
 
 bool check_space(char *lvl) {
@@ -192,39 +192,39 @@ bool check_space(char *lvl) {
 };
 
 void raise_boom_gate(struct BoomGate *boom_gate) {
-    pthread_mutex_lock(&boom_gate->mlock);
-    if (boom_gate->status == 'O') boom_gate->status = 'L';
-    while (boom_gate->status != 'C') {
-      pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
-    }
-    boom_gate->status = 'R';
-    pthread_mutex_unlock(&boom_gate->mlock);
-    pthread_cond_signal(&boom_gate->condition);
+  pthread_mutex_lock(&boom_gate->mlock);
+  if (boom_gate->status == 'O') boom_gate->status = 'L';
+  while (boom_gate->status != 'C') {
+    pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+  }
+  boom_gate->status = 'R';
+  pthread_mutex_unlock(&boom_gate->mlock);
+  pthread_cond_broadcast(&boom_gate->condition);
 };
 
 void lower_boom_gate(struct BoomGate *boom_gate) {
-    pthread_mutex_lock(&boom_gate->mlock);
-    if (boom_gate->status == 'C') boom_gate->status = 'R';
-    while (boom_gate->status != 'O') {
-      pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
-    }
-    boom_gate->status = 'L';
-    pthread_mutex_unlock(&boom_gate->mlock);
-    pthread_cond_signal(&boom_gate->condition);
+  pthread_mutex_lock(&boom_gate->mlock);
+  if (boom_gate->status == 'C') boom_gate->status = 'R';
+  while (boom_gate->status != 'O') {
+    pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+  }
+  boom_gate->status = 'L';
+  pthread_mutex_unlock(&boom_gate->mlock);
+  pthread_cond_broadcast(&boom_gate->condition);
 };
 
 char get_boom_gate_status(struct BoomGate *boom_gate) {
-    pthread_mutex_lock(&boom_gate->mlock);
-    char status = boom_gate->status;
-    pthread_mutex_unlock(&boom_gate->mlock);
-    return status;
+  pthread_mutex_lock(&boom_gate->mlock);
+  char status = boom_gate->status;
+  pthread_mutex_unlock(&boom_gate->mlock);
+  return status;
 };
 
 void set_sign(struct InformationSign *sign, char signal) {
-    pthread_mutex_lock(&sign->mlock);
-    sign->display = signal;
-    pthread_mutex_unlock(&sign->mlock);
-    pthread_cond_signal(&sign->condition);
+  pthread_mutex_lock(&sign->mlock);
+  sign->display = signal;
+  pthread_cond_broadcast(&sign->condition);
+  pthread_mutex_unlock(&sign->mlock);
 };
 
 int get_level_index(struct Level *lvl) {
