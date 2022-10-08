@@ -273,8 +273,8 @@ void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
 char get_display(struct InformationSign *sign) {
     pthread_mutex_lock(&sign->mlock);
     while(sign->display == '\0') {
+        printf("get_display: sign->display = %d\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
-        printf("get_display: sign->display = %c\n", sign->display);
     }
     printf("passed");
     char display = sign->display;

@@ -71,8 +71,6 @@ for more information.)
 #include "manager.h"
 #include "common.h"
 
-
-
 int main() {
   // wait until a shared memory segment named PARKING is created
   while((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
@@ -223,9 +221,8 @@ char get_boom_gate_status(struct BoomGate *boom_gate) {
 void set_sign(struct InformationSign *sign, char signal) {
   pthread_mutex_lock(&sign->mlock);
   sign->display = signal;
-  //printf("Sign: %c\n", sign->display);
-  pthread_cond_broadcast(&sign->condition);
   pthread_mutex_unlock(&sign->mlock);
+  pthread_cond_broadcast(&sign->condition);
 };
 
 int get_level_index(struct Level *lvl) {
@@ -258,7 +255,9 @@ void *entrance_loop(void *arg) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
     if (check_space(&lvl)) {
+      printf("Sign 1: %c\nInt 1:%d\n", entrance->information_sign.display, entrance->information_sign.display);
       set_sign(&entrance->information_sign, lvl);
+      printf("Sign 2: %c\nInt 2:%d\n", entrance->information_sign.display, entrance->information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);
