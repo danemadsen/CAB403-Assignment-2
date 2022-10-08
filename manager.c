@@ -256,6 +256,7 @@ void *entrance_loop(void *arg) {
     }
     if (check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
+      printf("%d\n", Parking->entrances[0].information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);

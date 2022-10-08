@@ -187,7 +187,7 @@ void enter_car(int entry) {
 };
 
 void exit_car(int ext) {
-    printf("exit_car(%d)", ext);
+    //printf("exit_car(%d)", ext);
     struct Car Auto = move_queue(exit_queue[ext], &exit_queue_lock[ext]);
     if (Auto.plate == NULL) return;
     // wait 10ms
@@ -196,7 +196,7 @@ void exit_car(int ext) {
     send_plate(Auto.plate, &Parking->exits[ext].LPR);
     open_boom_gate(&Parking->exits[ext].boom_gate);
     close_boom_gate(&Parking->exits[ext].boom_gate);
-    printf("Car %s has left the parking lot\n", Auto.plate);
+    //printf("Car %s has left the parking lot\n", Auto.plate);
 };
 
 void generate_plate(char *plate) {
@@ -272,6 +272,8 @@ void send_plate(char plate[6], struct LicencePlateRecognition *LPR) {
 
 char get_display(struct InformationSign *sign) {
     pthread_mutex_lock(&sign->mlock);
+    printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
+    printf("Parking: %d\n", Parking->entrances[1].information_sign.display);
     while(sign->display == '\0') {
         printf("get_display: sign->display = %d\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
