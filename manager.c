@@ -254,9 +254,11 @@ void *entrance_loop(void *arg) {
     while(check_plate(entrance->LPR.plate) == false) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
+    *entrance->LPR.plate = '\0';
+    pthread_mutex_unlock(&entrance->LPR.mlock);
     if (check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
-      printf("%d\n", Parking->entrances[0].information_sign.display);
+      printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);
@@ -265,8 +267,6 @@ void *entrance_loop(void *arg) {
     else {
       set_sign(&entrance->information_sign, 'F');
     }
-    *entrance->LPR.plate = '\0';
-    pthread_mutex_unlock(&entrance->LPR.mlock);
   }
 };
 
