@@ -220,11 +220,9 @@ void get_random_plate(char *plate) {
     srand(get_seed());
     if (rand() % 2 == 0) {
         generate_plate(plate);
-        printf("Rand Plate: %s\n", plate);
     }
     else {
         get_random_plate_from_file(plate);
-        printf("File Plate: %s\n", plate);
     }
 };
 
@@ -243,7 +241,7 @@ char get_display(Sign_t *sign) {
         printf("get_display: sign->display = %d\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
     }
-    printf("passed");
+    printf("=======> Passed\n");
     char display = sign->display;
     sign->display = '\0';
     pthread_mutex_unlock(&sign->mlock);
@@ -303,7 +301,6 @@ void *entrance_loop(void *arg) {
 void *car_entry(void *arg) {
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
-    printf("Auto Plate: %s\n", Auto.plate);
     srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);
@@ -365,6 +362,7 @@ void *car_exit(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
+    printf("Car %s left the parking\n", Auto.plate);
 };
 
 void temperature_loop() {
