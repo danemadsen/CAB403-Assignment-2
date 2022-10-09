@@ -97,11 +97,11 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
   }
-  pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
+  //pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
   //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
-  //display_loop();
-  while(1);
+  display_loop();
+  //while(1);
   return 0;
 }
 
@@ -119,9 +119,10 @@ void charge_car(Car_t *Auto) {
 void add_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
-      if (parked_cars[(int) Auto.level][i].plate == NULL) {
-          parked_cars[(int) Auto.level][i] = Auto;
-          break;
+      if (parked_cars[Auto.level][i].plate[0] == 0) {
+        parked_cars_count[Auto.level]++;
+        parked_cars[Auto.level][i] = Auto;
+        break;
       }
   }
   pthread_cond_signal(&parked_cars_condition);
@@ -132,7 +133,8 @@ void remove_car(Car_t Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (parked_cars[i][j].plate == Auto.plate && parked_cars[i][j].level != Auto.level) {
+      if (strcmp(parked_cars[i][j].plate, Auto.plate) == 0) {
+        parked_cars_count[i]--;
         parked_cars[i][j] = (Car_t) {0};
         break;
       }
@@ -146,7 +148,7 @@ void get_car(Car_t *Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (parked_cars[i][j].plate == Auto->plate) {
+      if (strcmp(parked_cars[i][j].plate, Auto->plate) == 0) {
         *Auto = parked_cars[i][j];
         break;
       }
@@ -163,9 +165,9 @@ bool check_plate(char* plate) {
       fseek(file, -1, SEEK_CUR);
       fgets(file_plate, 7, file);
       if (strcmp(plate, file_plate) == 0) {
-          free(file_plate);
-          fclose(file);
-          return true;
+        free(file_plate);
+        fclose(file);
+        return check_unique(plate);
       }
       memset(file_plate, 0, 7);
   }
@@ -174,12 +176,26 @@ bool check_plate(char* plate) {
   return false;
 };
 
+bool check_unique(char* plate) {
+  pthread_mutex_lock(&parked_cars_mlock);
+  for (int i = 0; i < (LEVELS); i++) {
+    for (int j = 0; j < (LEVEL_CAPACITY); j++) {
+      if (strcmp(parked_cars[i][j].plate, plate) == 0) {
+        pthread_mutex_unlock(&parked_cars_mlock);
+        return false;
+      }
+    }
+  }
+  pthread_mutex_unlock(&parked_cars_mlock);
+  return true;
+};
+
 bool check_space(char *lvl) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < (LEVELS); i++) {
     for (int j = 0; j < (LEVEL_CAPACITY); j++) {
       if (parked_cars[i][j].plate[0] == '\0') {
-      *lvl = i + 49;
+      *lvl = i + 49; // Converts the level number to a char
       pthread_mutex_unlock(&parked_cars_mlock);
       return true;
       }
@@ -238,7 +254,7 @@ int get_level_count(int level) {
   int count = 0;
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
-    if (parked_cars[level][i].plate[0] != '\0') {
+    if (parked_cars[level][i].plate[0] != 0) {
       count++;
     }
   }
@@ -258,10 +274,8 @@ void *entrance_loop(void *arg) {
     *plate = *entrance->LPR.plate;
     *entrance->LPR.plate = '\0';
     pthread_mutex_unlock(&entrance->LPR.mlock);
-    printf("Plate: \"%s\"\n", plate);
     if (check_plate(plate) || check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
-      printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);

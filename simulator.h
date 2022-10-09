@@ -117,7 +117,8 @@ int get_seed();
 pthread_t entrance_loop_thread;
 pthread_t exit_loop_thread;
 pthread_t temperature_loop_thread;
-pthread_t car_threads[LEVELS*LEVEL_CAPACITY];
+pthread_t entry_threads[LEVELS*LEVEL_CAPACITY];
+pthread_t exit_threads[LEVELS*LEVEL_CAPACITY];
 
 Car_t get_departing();
 //void add_car(Car_t Auto);

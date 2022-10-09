@@ -145,14 +145,12 @@ int main(){
     }
 
 
-    //pthread_create(&entrance_loop_thread, NULL, entrance_loop, NULL);
-    //pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
+    pthread_create(&entrance_loop_thread, NULL, entrance_loop, NULL);
+    pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
     //temperature_loop();
 
     //pthread_create(&car_threads[0], NULL, car_entry, NULL);
-    while(1){
-        car_entry(NULL);
-    }
+    while(1);
     return 0;
 };
 
@@ -241,14 +239,12 @@ void send_plate(char plate[6], LPR_t *lpr) {
 char get_display(Sign_t *sign) {
     pthread_mutex_lock(&sign->mlock);
     while(sign->display == '\0') {
-        printf("Failed: \"%d\"\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
     }
-    printf("=======> Passed: %d\n", sign->display);
     char display = sign->display;
     sign->display = '\0';
     pthread_mutex_unlock(&sign->mlock);
-    return display;
+    return display-49;
 };
 
 void open_boom_gate(BoomGate_t *boom_gate) {
@@ -292,9 +288,9 @@ void *entrance_loop(void *arg) {
         usleep((rand() % 100000) + 1000);
         // create a new car
         for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            if (car_threads[i] == 0) {
+            if (entry_threads[i] == 0) {
                 // Create a new car thread
-                pthread_create(&car_threads[i], NULL, car_entry, NULL);
+                pthread_create(&entry_threads[i], NULL, car_entry, NULL);
                 break;
             }
         }
@@ -304,9 +300,8 @@ void *entrance_loop(void *arg) {
 void *car_entry(void *arg) {
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
-    printf("Plate: \"%s\"\n", Auto.plate);
     srand(get_seed());
-    int random_entrance = 0; //rand() % ENTRANCES;
+    int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);
     
     // wait 2ms
@@ -315,20 +310,19 @@ void *car_entry(void *arg) {
     // Send the car to the entrance LPR
     send_plate(Auto.plate, &Parking->entrances[random_entrance].LPR);
     
-    printf("Entrance: %d\n", random_entrance);
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
 
-    if (Auto.level >= '1' && Auto.level <= '5') {
+    if (Auto.level >= 0 && Auto.level <= 4) {
         open_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         // wait 10ms
         usleep(10000);
-        send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 49].LPR);
+        send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
         Auto.departure_time = ((int) time(NULL)) + (rand() % 9901 + 100);
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         for(int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
             if (ParkedCars[i].plate[0] == 0) {
-                printf("Car %s parked at level %c, spot %d\n", Auto.plate, Auto.level, i);
+                printf("IN============> Car %s parked at level %c, spot %d\n", Auto.plate, Auto.level, i);
                 ParkedCars[i] = Auto;
                 break;
             }
@@ -342,9 +336,9 @@ void *exit_loop(void *arg) {
     while (1) {
         Car_t Auto = get_departing();
         for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            if (car_threads[i] == 0) {
+            if (exit_threads[i] == 0) {
                 // Create a new car thread
-                pthread_create(&car_threads[i], NULL, car_exit, &Auto);
+                pthread_create(&exit_threads[i], NULL, car_exit, &Auto);
                 break;
             }
         }
@@ -368,7 +362,7 @@ void *car_exit(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
-    printf("Car %s left the parking\n", Auto.plate);
+    printf("OUT===================> Car %s left the parking\n", Auto.plate);
 };
 
 void temperature_loop() {
