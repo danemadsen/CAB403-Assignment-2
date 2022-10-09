@@ -11,3 +11,6 @@ manager: manager.c manager.h common.h
 
 simulator: simulator.c simulator.h common.h
 	gcc -o simulator simulator.c
+
+testing: testing.c
+	gcc -o testing testing.c

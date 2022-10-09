@@ -190,8 +190,9 @@ void get_random_plate_from_file(char *plate) {
     rewind(file);
     // go to the start of the random line
     for (int i = 0; i < line; i++) {
-        fgets(plate, 7, file);
+        while((c = fgetc(file)) != '\n');
     }
+    fgets(plate, 7, file);
     // close the file
     fclose(file);
 };
@@ -215,15 +216,15 @@ bool check_plate(char *plate) {
     return false;
 };
 
-void get_random_plate(char* plate) {
+void get_random_plate(char *plate) {
     srand(get_seed());
     if (rand() % 2 == 0) {
         generate_plate(plate);
-        printf("File Plate: %s\n", plate);
+        printf("Rand Plate: %s\n", plate);
     }
     else {
         get_random_plate_from_file(plate);
-        printf("Rand Plate: %s\n", plate);
+        printf("File Plate: %s\n", plate);
     }
 };
 
@@ -276,10 +277,10 @@ void close_boom_gate(BoomGate_t *boom_gate) {
 };
 
 int get_seed() {
-    pthread_mutex_lock(&seed_lock);
+    //pthread_mutex_lock(&seed_lock);
     int seed = incremental_seed * time(NULL);
     incremental_seed++;
-    pthread_mutex_unlock(&seed_lock);
+    //pthread_mutex_unlock(&seed_lock);
     return seed;
 };
 
