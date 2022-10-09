@@ -125,9 +125,9 @@ Car_t get_departing();
 //void enter_car(int entry);
 //void exit_car(int ext);
 
-void generate_plate(char* plate);
+void generate_plate(char *plate);
 void get_random_plate_from_file(char* plate);
-bool check_plate(char* plate);
+bool check_plate(char *plate);
 void get_random_plate(char* plate);
 void send_plate(char plate[6], LPR_t *lpr);
 

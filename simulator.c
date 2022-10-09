@@ -196,10 +196,10 @@ void get_random_plate_from_file(char *plate) {
     fclose(file);
 };
 
-bool check_plate(char* plate) {
+bool check_plate(char *plate) {
     FILE* file = fopen("plates.txt", "r");
     char c;
-    char* file_plate = malloc(7);
+    char *file_plate = malloc(7);
     while ((c = fgetc(file)) != EOF) {
         fseek(file, -1, SEEK_CUR);
         fgets(file_plate, 7, file);
@@ -219,11 +219,12 @@ void get_random_plate(char* plate) {
     srand(get_seed());
     if (rand() % 2 == 0) {
         generate_plate(plate);
+        printf("File Plate: %s\n", plate);
     }
     else {
         get_random_plate_from_file(plate);
+        printf("Rand Plate: %s\n", plate);
     }
-    printf("Plate: %s\n", plate);
 };
 
 void send_plate(char plate[6], LPR_t *lpr) {
@@ -300,8 +301,8 @@ void *entrance_loop(void *arg) {
 
 void *car_entry(void *arg) {
     Car_t Auto;
-    get_random_plate(Auto.plate);
-    
+    get_random_plate(&Auto.plate[0]);
+    printf("Auto Plate: %s\n", Auto.plate);
     srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);

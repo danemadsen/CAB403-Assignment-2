@@ -19,6 +19,21 @@ int main(){
     // print the size of pthread_mutex_t
     shm_unlink("PARKING");
 
-    char c = '1';
-    printf("%d\n%c\n", c, 49);
+    char plate;
+    for(int i = 0; i < 100; i++){
+        generate_plate(&plate);
+        printf("%s\n", plate);
+    }
+    return 0;
 }
+
+void generate_plate(char *plate) {
+    srand(get_seed());
+    for (int i = 0; i < 3; i++) {
+        plate[i] = (char) (rand() % 10 + '0');
+    }
+    // for the last 3 characters, generate a random capital letter
+    for (int i = 3; i < 6; i++) {
+        plate[i] = rand() % 26 + 65;
+    }
+};
