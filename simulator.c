@@ -105,7 +105,7 @@ int main(){
     incremental_seed = 0;
     // initialise ParkedCars to all have plates of '000000'
     for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++){
-        strcpy(ParkedCars[i].plate, "000000");
+        strcpy(ParkedCars[i].plate, "\0");
         ParkedCars[i].departure_time = 0;
     }
 
@@ -144,10 +144,15 @@ int main(){
         pthread_cond_init(&Parking->levels[i].LPR.condition, &shared_cond_attr);
     }
 
-    pthread_create(&entrance_loop_thread, NULL, entrance_loop, NULL);
-    pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
+
+    //pthread_create(&entrance_loop_thread, NULL, entrance_loop, NULL);
+    //pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
     //temperature_loop();
-    while(1);
+
+    //pthread_create(&car_threads[0], NULL, car_entry, NULL);
+    while(1){
+        car_entry(NULL);
+    }
     return 0;
 };
 
@@ -235,13 +240,12 @@ void send_plate(char plate[6], LPR_t *lpr) {
 
 char get_display(Sign_t *sign) {
     pthread_mutex_lock(&sign->mlock);
-    printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
-    printf("Parking: %d\n", Parking->entrances[1].information_sign.display);
     while(sign->display == '\0') {
-        printf("get_display: sign->display = %d\n", sign->display);
+        printf("False: %c\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
     }
     printf("=======> Passed\n");
+    printf("True: %c\n", sign->display);
     char display = sign->display;
     sign->display = '\0';
     pthread_mutex_unlock(&sign->mlock);
@@ -301,6 +305,7 @@ void *entrance_loop(void *arg) {
 void *car_entry(void *arg) {
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
+    printf("Plate: \"%s\"\n", Auto.plate);
     srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);
@@ -321,8 +326,9 @@ void *car_entry(void *arg) {
         send_plate(Auto.plate, &Parking->levels[((int) Auto.level) - 49].LPR);
         Auto.departure_time = ((int) time(NULL)) + (rand() % 9901 + 100);
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
-        for(int i = 0; i < LEVEL_CAPACITY; i++) {
-            if (ParkedCars[i].plate == "000000") {
+        for(int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
+            if (ParkedCars[i].plate[0] == 0) {
+                printf("Car %s parked at level %c, spot %d\n", Auto.plate, Auto.level, i);
                 ParkedCars[i] = Auto;
                 break;
             }
