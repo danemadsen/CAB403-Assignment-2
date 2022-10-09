@@ -222,7 +222,7 @@ void set_sign(Sign_t *sign, char signal) {
   pthread_mutex_lock(&sign->mlock);
   sign->display = signal;
   pthread_mutex_unlock(&sign->mlock);
-  pthread_cond_broadcast(&sign->condition);
+  pthread_cond_signal(&sign->condition);
 };
 
 int get_level_index(Level_t *lvl) {
