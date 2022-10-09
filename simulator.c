@@ -241,11 +241,10 @@ void send_plate(char plate[6], LPR_t *lpr) {
 char get_display(Sign_t *sign) {
     pthread_mutex_lock(&sign->mlock);
     while(sign->display == '\0') {
-        printf("False: %c\n", sign->display);
+        printf("Failed: \"%d\"\n", sign->display);
         pthread_cond_wait(&sign->condition, &sign->mlock);
     }
-    printf("=======> Passed\n");
-    printf("True: %c\n", sign->display);
+    printf("=======> Passed: %d\n", sign->display);
     char display = sign->display;
     sign->display = '\0';
     pthread_mutex_unlock(&sign->mlock);
@@ -307,7 +306,7 @@ void *car_entry(void *arg) {
     get_random_plate(&Auto.plate[0]);
     printf("Plate: \"%s\"\n", Auto.plate);
     srand(get_seed());
-    int random_entrance = rand() % ENTRANCES;
+    int random_entrance = 0; //rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);
     
     // wait 2ms
@@ -316,6 +315,7 @@ void *car_entry(void *arg) {
     // Send the car to the entrance LPR
     send_plate(Auto.plate, &Parking->entrances[random_entrance].LPR);
     
+    printf("Entrance: %d\n", random_entrance);
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
 

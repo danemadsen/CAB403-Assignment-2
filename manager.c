@@ -97,10 +97,10 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
   }
-  //pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
+  pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
   //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
-  display_loop();
+  //display_loop();
   while(1);
   return 0;
 }
@@ -250,13 +250,16 @@ void *entrance_loop(void *arg) {
   Entrance_t *entrance = (Entrance_t *)arg;
   char lvl;
   while(1) {
+    char plate[6];
     pthread_mutex_lock(&entrance->LPR.mlock);
-    while(check_plate(entrance->LPR.plate) == false) {
+    while(entrance->LPR.plate[0] == 0) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
+    *plate = *entrance->LPR.plate;
     *entrance->LPR.plate = '\0';
     pthread_mutex_unlock(&entrance->LPR.mlock);
-    if (check_space(&lvl)) {
+    printf("Plate: \"%s\"\n", plate);
+    if (check_plate(plate) || check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
       printf("Parking: %d\n", Parking->entrances[0].information_sign.display);
       raise_boom_gate(&entrance->boom_gate);
