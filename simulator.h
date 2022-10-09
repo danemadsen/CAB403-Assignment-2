@@ -97,13 +97,15 @@ int shm_fd;
 CarPark_t* Parking;
 int nums[MAX(ENTRANCES, EXITS)];
 
-Car_t entrance_queue[ENTRANCES][LEVEL_CAPACITY];
-pthread_mutex_t entrance_queue_lock[ENTRANCES];
-pthread_cond_t entrance_queue_condition[ENTRANCES];
+Car_t ParkedCars[LEVELS*LEVEL_CAPACITY];
 
-Car_t exit_queue[EXITS][LEVEL_CAPACITY];
-pthread_mutex_t exit_queue_lock[EXITS];
-pthread_cond_t exit_queue_condition[EXITS];
+//Car_t entrance_queue[ENTRANCES][LEVEL_CAPACITY];
+pthread_mutex_t entrance_lock[ENTRANCES];
+pthread_cond_t entrance_condition[ENTRANCES];
+
+//Car_t exit_queue[EXITS][LEVEL_CAPACITY];
+pthread_mutex_t exit_lock[EXITS];
+pthread_cond_t exit_condition[EXITS];
 
 pthread_mutexattr_t shared_mutex_attr;
 pthread_condattr_t shared_cond_attr;
@@ -112,17 +114,16 @@ int incremental_seed;
 pthread_mutex_t seed_lock;
 int get_seed();
 
-pthread_t car_generator_loop_thread;
-pthread_t entrance_loop_thread[ENTRANCES];
-pthread_t exit_loop_threads[EXITS];
+pthread_t entrance_loop_thread;
+pthread_t exit_loop_thread;
 pthread_t temperature_loop_thread;
 pthread_t car_threads[LEVELS*LEVEL_CAPACITY];
 
-void new_car();
-void add_car(Car_t Auto);
-Car_t move_queue(Car_t Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
-void enter_car(int entry);
-void exit_car(int ext);
+Car_t get_departing();
+//void add_car(Car_t Auto);
+//Car_t move_queue(Car_t Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
+//void enter_car(int entry);
+//void exit_car(int ext);
 
 void generate_plate(char* plate);
 void get_random_plate_from_file(char* plate);
@@ -135,14 +136,14 @@ char get_display(Sign_t *sign);
 void open_boom_gate(BoomGate_t *boom_gate);
 void close_boom_gate(BoomGate_t *boom_gate);
 
-void send_to_random_entrance(Car_t Auto);
-void send_to_random_exit(Car_t Auto);
+int get_seed();
+//void send_to_random_entrance(Car_t Auto);
+//void send_to_random_exit(Car_t Auto);
 
-void set_random_temperature(int lvl);
+//void set_random_temperature(int lvl);
 
-void car_generator_loop();
-//void *car_sorter_loop(void *arg);
-void *car_instance(void *arg);
-void *temperature_loop(void *arg);
 void *entrance_loop(void *arg);
+void *car_entry(void *arg);
 void *exit_loop(void *arg);
+void *car_exit(void *arg);
+void temperature_loop();
