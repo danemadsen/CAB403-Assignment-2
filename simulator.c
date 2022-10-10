@@ -297,7 +297,7 @@ void *car_instance(void *arg) {
         // The car is not allowed to enter
         pthread_mutex_unlock(&entrance_lock[random_entrance]);
         pthread_cond_signal(&entrance_condition[random_entrance]);
-        printf("REJECTED======> Car with plate %s is not allowed to enter\n", Auto.plate);
+        printf("\033[41mREJECTED =>\033[0m Car %s is not allowed to enter\n", Auto.plate);
         //pthread_exit(NULL);
         return NULL;
     }
@@ -309,7 +309,7 @@ void *car_instance(void *arg) {
         departure_time = rand() % 9901 + 100;
         Auto.arrival_time = clock();
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
-        printf("IN============> Car \"%s\" parked at level %c\n", Auto.plate, Auto.level+49);
+        printf("\033[44mIN       =>\033[0m Car %s parked at level %c\n", Auto.plate, Auto.level+49);
     }
     pthread_mutex_unlock(&entrance_lock[random_entrance]);
     pthread_cond_signal(&entrance_condition[random_entrance]);
@@ -331,7 +331,7 @@ void *car_instance(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
-    printf("OUT===========> Car %s left the parking\n", Auto.plate);
+    printf("\033[45mOUT      =>\033[0m Car %s left the parking\n", Auto.plate);
 };
 
 void temperature_loop() {

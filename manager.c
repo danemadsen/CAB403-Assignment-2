@@ -76,7 +76,6 @@ int main() {
   while((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
     printf("Waiting for shared memory segment to be created...\n");
     sleep(1);
-    printf("\033[2J\033[1;1H");
   }
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
@@ -97,9 +96,7 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
   }
-  //pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
-  //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
-  //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
+
   display_loop();
   //while(1);
   return 0;
@@ -108,12 +105,12 @@ int main() {
 void charge_car(Car_t *Auto) {
   // Calculate the cost of the car's stay
   double cost = (clock() - Auto->arrival_time) * RATE;
-  printf("\033[36mCar with plate \"%s\" charged: %f\033[0m\n", Auto->plate, cost);
+  printf("\033[46m\033[30mCHARGE    =>\033[0m Car %s charged: %0.01f\n", Auto->plate, cost);
   //Increment the total revenue
   pthread_mutex_lock(&revenue_lock);
   revenue += cost;
   pthread_mutex_unlock(&revenue_lock);
-  printf("\033[32mCurrent Revenue: %lf\033[0m\n", revenue);
+  printf("\033[45mREVENUE   =>\033[0m Current Revenue: %0.01f\n", revenue);
 };
 
 void add_car(Car_t Auto){
@@ -332,7 +329,7 @@ void display_loop() {
     for (int i = 0; i < LEVELS; i++) {
       int_buffer = get_level_count(i);
       if(int_buffer != parked_cars_count[i]) {
-        printf("\033[33mLevel %d Vehicle Count: %d\033[0m\n", i + 1, int_buffer);
+        printf("\033[47m\033[30mCAR COUNT =>\033[0m Level %d Vehicle Count: %d\n", i + 1, int_buffer);
         parked_cars_count[i] = int_buffer;
       }
     }
@@ -340,14 +337,14 @@ void display_loop() {
     for (int i = 0; i < ENTRANCES; i++) {
       char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
       if(char_buffer != entrance_boom_gate_status[i]) {
-        printf("\033[34mEntrance %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
+        printf("\033[44mBOOM GATE =>\033[0m Entrance %d Boom Gate Status: %c\n", i + 1, char_buffer);
         entrance_boom_gate_status[i] = char_buffer;
       }
     }
     for (int i = 0; i < EXITS; i++) {
       char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
       if(char_buffer != exit_boom_gate_status[i]) {
-        printf("\033[31mExit %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
+        printf("\033[41mBOOM GATE =>\033[0m Exit %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
         exit_boom_gate_status[i] = char_buffer;
       }
     }
