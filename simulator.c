@@ -331,7 +331,7 @@ void *car_instance(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
-    printf("\033[45mOUT      =>\033[0m Car %s left the parking\n", Auto.plate);
+    printf("\033[45mOUT      =>\033[0m Car %s left the car park\n", Auto.plate);
 };
 
 void temperature_loop() {
