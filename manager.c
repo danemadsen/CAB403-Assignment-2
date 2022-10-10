@@ -294,7 +294,7 @@ void *entrance_loop(void *arg) {
       set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
-      usleep(20000);
+      usleep(20000*TIMESCALE);
       lower_boom_gate(&entrance->boom_gate);
       // Using strcmp makes plate overflow so a for loop is using instead
       for (int i = 0; i < 6; i++) {
@@ -339,7 +339,7 @@ void *exit_loop(void *arg) {
     charge_car(&Auto);
     raise_boom_gate(&exit->boom_gate);
     // wait 20ms
-    usleep(20000);
+    usleep(20000*TIMESCALE);
     lower_boom_gate(&exit->boom_gate);
     *exit->LPR.plate = '\0';
   }
@@ -382,7 +382,7 @@ void display_loop() {
            get_level_count(3),
            get_level_count(4),
            revenue);
-    usleep(10000);
+    usleep(1000);
     printf("\033[H\033[J");
   }
 };
