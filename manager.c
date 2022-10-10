@@ -358,9 +358,12 @@ void display_loop() {
            "█   Exit Boom Gate   |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
            "█----------------------------------------------------------------------█\n"
            "█   Entrance Sign    |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
-           "█----------------------------------------------------------------------█\n"
-           "█    Level Count     |    %d    |    %d    |    %d    |    %d    |    %d    █\n"
-           "████████████████████████████████████████████████████████████████████████\n"
+           "████████████████████████████████████████████████████████████████████████\n\n"
+           "Level 1 Count: %d\n"
+           "Level 2 Count: %d\n"
+           "Level 3 Count: %d\n"
+           "Level 4 Count: %d\n"
+           "Level 5 Count: %d\n\n"           
            "Current Revenue: %0.01f\n",
            get_boom_gate_status(&Parking->entrances[0].boom_gate),
            get_boom_gate_status(&Parking->entrances[1].boom_gate),
