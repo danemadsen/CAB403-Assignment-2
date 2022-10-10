@@ -44,6 +44,8 @@ Student Email: n10983864@qut.edu.au
 #define ENTRANCES 5
 #define EXITS 5
 
+#define TIMESCALE 1
+
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct Car Car_t;
