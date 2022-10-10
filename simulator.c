@@ -164,6 +164,7 @@ void generate_plate(char *plate) {
     for (int i = 3; i < 6; i++) {
         plate[i] = rand() % 26 + 65;
     }
+    plate[6] = '\0';
 };
 
 void get_random_plate_from_file(char *plate) {
@@ -284,6 +285,7 @@ void *car_generator_loop(void *arg) {
 };
 
 void *car_instance(void *arg) {
+    printf("Car created\n");
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
     srand(get_seed());
@@ -295,16 +297,17 @@ void *car_instance(void *arg) {
     
     // Send the car to the entrance LPR
     send_plate(Auto.plate, &Parking->entrances[random_entrance].LPR);
-    
+    printf("Plate sent: \"%s\"\nSize: %d", Auto.plate, sizeof(Auto.plate));
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
-
+    printf("Car level: %d\n", Auto.level);
     if (Auto.level < 0 || Auto.level > 4) {
         // The car is not allowed to enter
         pthread_mutex_unlock(&entrance_lock[random_entrance]);
         pthread_cond_signal(&entrance_condition[random_entrance]);
         printf("REJECTED======> Car with plate %s is not allowed to enter\n", Auto.plate);
-        pthread_exit(NULL);
+        //pthread_exit(NULL);
+        return NULL;
     }
     else {
         open_boom_gate(&Parking->entrances[random_entrance].boom_gate);
@@ -313,7 +316,7 @@ void *car_instance(void *arg) {
         send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
         Auto.departure_time = rand() % 9901 + 100;
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
-        printf("IN============> Car %s parked at level %c\n", Auto.plate, Auto.level);
+        printf("IN============> Car \"%s\" parked at level %c\n", Auto.plate, Auto.level+49);
     }
     pthread_mutex_unlock(&entrance_lock[random_entrance]);
     pthread_cond_signal(&entrance_condition[random_entrance]);

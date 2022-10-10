@@ -101,7 +101,7 @@ int main() {
   //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
-  //while(1);
+  while(1);
   return 0;
 }
 
@@ -271,10 +271,10 @@ void *entrance_loop(void *arg) {
     while(entrance->LPR.plate[0] == 0) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
-    *plate = *entrance->LPR.plate;
-    *entrance->LPR.plate = '\0';
+    strcpy(plate, entrance->LPR.plate);
+    strcpy(entrance->LPR.plate, (char[6]) {0});
     pthread_mutex_unlock(&entrance->LPR.mlock);
-    if (check_plate(plate) || check_space(&lvl)) {
+    if (check_plate(plate) && check_space(&lvl)) {
       set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
