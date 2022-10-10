@@ -108,12 +108,12 @@ int main() {
 void charge_car(Car_t *Auto) {
   // Calculate the cost of the car's stay
   double cost = (clock() - Auto->arrival_time) * RATE;
-  printf("Car with plate \"%s\" charged: %f\n", Auto->plate, cost);
+  printf("\033[36mCar with plate \"%s\" charged: %f\033[0m\n", Auto->plate, cost);
   //Increment the total revenue
   pthread_mutex_lock(&revenue_lock);
   revenue += cost;
   pthread_mutex_unlock(&revenue_lock);
-  printf("Current Revenue: %lf\n", revenue);
+  printf("\033[32mCurrent Revenue: %lf\033[0m\n", revenue);
 };
 
 void add_car(Car_t Auto){
@@ -332,7 +332,7 @@ void display_loop() {
     for (int i = 0; i < LEVELS; i++) {
       int_buffer = get_level_count(i);
       if(int_buffer != parked_cars_count[i]) {
-        printf("Level %d Vehicle Count: %d\n", i + 1, int_buffer);
+        printf("\033[33mLevel %d Vehicle Count: %d\033[0m\n", i + 1, int_buffer);
         parked_cars_count[i] = int_buffer;
       }
     }
@@ -340,20 +340,16 @@ void display_loop() {
     for (int i = 0; i < ENTRANCES; i++) {
       char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
       if(char_buffer != entrance_boom_gate_status[i]) {
-        printf("Entrance %d Boom Gate Status: %c\n", i + 1, char_buffer);
+        printf("\033[34mEntrance %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
         entrance_boom_gate_status[i] = char_buffer;
       }
     }
     for (int i = 0; i < EXITS; i++) {
       char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
       if(char_buffer != exit_boom_gate_status[i]) {
-        printf("Exit %d Boom Gate Status: %c\n", i + 1, char_buffer);
+        printf("\033[31mExit %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
         exit_boom_gate_status[i] = char_buffer;
       }
     }
-    //wait 1s
-    //sleep(1);
-    //clear the console
-    //printf("\033[2J\033[1;1H");
   }
 };
