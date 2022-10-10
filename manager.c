@@ -80,6 +80,11 @@ int main() {
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
   revenue = 0;
+  set_sign(&Parking->entrances[0].information_sign, 'N'-49);
+  set_sign(&Parking->entrances[1].information_sign, 'N'-49);
+  set_sign(&Parking->entrances[2].information_sign, 'N'-49);
+  set_sign(&Parking->entrances[3].information_sign, 'N'-49);
+  set_sign(&Parking->entrances[4].information_sign, 'N'-49);
 
   //Initialise the mutexes and conditions
   pthread_mutex_init(&parked_cars_mlock, NULL);
@@ -107,12 +112,10 @@ int main() {
 void charge_car(Car_t *Auto) {
   // Calculate the cost of the car's stay
   double cost = (clock() - Auto->arrival_time) * RATE;
-  printf("\033[46m\033[30mCHARGE    =>\033[0m Car %s charged: %0.01f\n", Auto->plate, cost);
   //Increment the total revenue
   pthread_mutex_lock(&revenue_lock);
   revenue += cost;
   pthread_mutex_unlock(&revenue_lock);
-  printf("\033[45mREVENUE   =>\033[0m Current Revenue: %0.01f\n", revenue);
 };
 
 void add_car(Car_t Auto){
@@ -343,30 +346,43 @@ void *exit_loop(void *arg) {
 };
 
 void display_loop() {
-
   while(1) {
-    //printf("Current Revenue: %lf\n\n", revenue);
-    for (int i = 0; i < LEVELS; i++) {
-      int_buffer = get_level_count(i);
-      if(int_buffer != parked_cars_count[i]) {
-        printf("\033[47m\033[30mCAR COUNT =>\033[0m Level %d Vehicle Count: %d\n", i + 1, int_buffer);
-        parked_cars_count[i] = int_buffer;
-      }
-    }
-    // Display the current status of all boom gates
-    for (int i = 0; i < ENTRANCES; i++) {
-      char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
-      if(char_buffer != entrance_boom_gate_status[i]) {
-        printf("\033[44mBOOM GATE =>\033[0m Entrance %d Boom Gate Status: %c\n", i + 1, char_buffer);
-        entrance_boom_gate_status[i] = char_buffer;
-      }
-    }
-    for (int i = 0; i < EXITS; i++) {
-      char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
-      if(char_buffer != exit_boom_gate_status[i]) {
-        printf("\033[41mBOOM GATE =>\033[0m Exit %d Boom Gate Status: %c\033[0m\n", i + 1, char_buffer);
-        exit_boom_gate_status[i] = char_buffer;
-      }
-    }
+    printf("████████████████████████████████████████████████████████████████████████\n"
+           "█                              PARKING LOT                             █\n"
+           "████████████████████████████████████████████████████████████████████████\n"
+           "█       Index        |    1    |    2    |    3    |    4    |    5    █\n"
+           "█----------------------------------------------------------------------█\n"
+           "█ Entrance Boom Gate |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
+           "█----------------------------------------------------------------------█\n"
+           "█   Exit Boom Gate   |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
+           "█----------------------------------------------------------------------█\n"
+           "█   Entrance Sign    |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
+           "█----------------------------------------------------------------------█\n"
+           "█    Level Count     |    %d    |    %d    |    %d    |    %d    |    %d    █\n"
+           "████████████████████████████████████████████████████████████████████████\n"
+           "Current Revenue: %0.01f\n",
+           get_boom_gate_status(&Parking->entrances[0].boom_gate),
+           get_boom_gate_status(&Parking->entrances[1].boom_gate),
+           get_boom_gate_status(&Parking->entrances[2].boom_gate),
+           get_boom_gate_status(&Parking->entrances[3].boom_gate),
+           get_boom_gate_status(&Parking->entrances[4].boom_gate),
+           get_boom_gate_status(&Parking->exits[0].boom_gate),
+           get_boom_gate_status(&Parking->exits[1].boom_gate),
+           get_boom_gate_status(&Parking->exits[2].boom_gate),
+           get_boom_gate_status(&Parking->exits[3].boom_gate),
+           get_boom_gate_status(&Parking->exits[4].boom_gate),
+           Parking->entrances[0].information_sign.display,
+           Parking->entrances[1].information_sign.display,
+           Parking->entrances[2].information_sign.display,
+           Parking->entrances[3].information_sign.display,
+           Parking->entrances[4].information_sign.display,
+           get_level_count(0),
+           get_level_count(1),
+           get_level_count(2),
+           get_level_count(3),
+           get_level_count(4),
+           revenue);
+    usleep(10000);
+    printf("\033[H\033[J");
   }
 };

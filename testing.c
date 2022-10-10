@@ -18,5 +18,15 @@ int main(){
     void* ptr = mmap(NULL, 2930, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     // print the size of pthread_mutex_t
     shm_unlink("PARKING");
+    while(1){
+        printf("Some Text\n");
+        printf("Some Text\n");
+        printf("Some Text\n");
+        printf("Some Text\n");
+        // usleep for 10ms
+        usleep(1000);
+        //Clear the console
+        printf("\033[H\033[J");
+    }
     return 0;
 }

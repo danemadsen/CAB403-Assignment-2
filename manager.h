@@ -76,10 +76,8 @@ for more information.)
 int shm_fd = -1;
 CarPark_t* Parking;
 double revenue;
-int int_buffer;
 char entrance_boom_gate_status[ENTRANCES];
 char exit_boom_gate_status[EXITS];
-char char_buffer;
 
 Car_t parked_cars[LEVELS][LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];
@@ -91,6 +89,7 @@ pthread_t entrance_threads[ENTRANCES];
 pthread_t level_threads[LEVELS];
 pthread_t exit_threads[EXITS];
 
+void set_sign(Sign_t *sign, char signal);
 bool check_plate(char *plate);
 bool check_unique(char *plate);
 bool check_space();
