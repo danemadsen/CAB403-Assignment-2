@@ -305,7 +305,8 @@ void *entrance_loop(void *arg) {
       add_car(Auto);
     }
     else {
-      set_sign(&entrance->information_sign, 'F');
+      // 21 is the code for Negitive Ack in ASCII and converts to 'F' in the display
+      set_sign(&entrance->information_sign, 21); 
     }
   }
 };
