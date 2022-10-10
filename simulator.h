@@ -114,11 +114,9 @@ int incremental_seed;
 pthread_mutex_t seed_lock;
 int get_seed();
 
-pthread_t entrance_loop_thread;
-pthread_t exit_loop_thread;
+pthread_t generator_thread;
 pthread_t temperature_loop_thread;
-pthread_t entry_threads[LEVELS*LEVEL_CAPACITY];
-pthread_t exit_threads[LEVELS*LEVEL_CAPACITY];
+pthread_t car_thread;
 
 Car_t get_departing();
 //void add_car(Car_t Auto);
@@ -143,8 +141,6 @@ int get_seed();
 
 //void set_random_temperature(int lvl);
 
-void *entrance_loop(void *arg);
-void *car_entry(void *arg);
-void *exit_loop(void *arg);
-void *car_exit(void *arg);
+void *car_generator_loop(void *arg);
+void *car_instance(void *arg);
 void temperature_loop();

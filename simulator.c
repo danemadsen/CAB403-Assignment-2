@@ -145,24 +145,15 @@ int main(){
     }
 
 
-    pthread_create(&entrance_loop_thread, NULL, entrance_loop, NULL);
-    pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
+    pthread_create(&generator_thread, NULL, car_generator_loop, NULL);
+    //pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
     //temperature_loop();
 
     //pthread_create(&car_threads[0], NULL, car_entry, NULL);
+    //car_instance(NULL);
     while(1);
     return 0;
 };
-
-Car_t get_departing(){
-    while(1){
-        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++){
-            if (ParkedCars[i].departure_time < ((int) time(NULL)) && ParkedCars[i].departure_time != 0){
-                return ParkedCars[i];
-            }
-        }
-    }
-}
 
 void generate_plate(char *plate) {
     srand(get_seed());
@@ -281,23 +272,18 @@ int get_seed() {
     return seed;
 };
 
-void *entrance_loop(void *arg) {
+void *car_generator_loop(void *arg) {
     while (1) {
         srand(get_seed());
         // wait 1-100ms
         usleep((rand() % 100000) + 1000);
         // create a new car
-        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            if (entry_threads[i] == 0) {
-                // Create a new car thread
-                pthread_create(&entry_threads[i], NULL, car_entry, NULL);
-                break;
-            }
-        }
+        pthread_create(&car_thread, NULL, car_instance, NULL);
+        pthread_detach(car_thread);
     }
 };
 
-void *car_entry(void *arg) {
+void *car_instance(void *arg) {
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
     srand(get_seed());
@@ -313,40 +299,30 @@ void *car_entry(void *arg) {
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
 
-    if (Auto.level >= 0 && Auto.level <= 4) {
+    if (Auto.level < 0 || Auto.level > 4) {
+        // The car is not allowed to enter
+        pthread_mutex_unlock(&entrance_lock[random_entrance]);
+        pthread_cond_signal(&entrance_condition[random_entrance]);
+        printf("REJECTED======> Car with plate %s is not allowed to enter\n", Auto.plate);
+        pthread_exit(NULL);
+    }
+    else {
         open_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         // wait 10ms
         usleep(10000);
         send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
-        Auto.departure_time = ((int) time(NULL)) + (rand() % 9901 + 100);
+        Auto.departure_time = rand() % 9901 + 100;
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
-        for(int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            if (ParkedCars[i].plate[0] == 0) {
-                printf("IN============> Car %s parked at level %c, spot %d\n", Auto.plate, Auto.level, i);
-                ParkedCars[i] = Auto;
-                break;
-            }
-        }
+        printf("IN============> Car %s parked at level %c\n", Auto.plate, Auto.level);
     }
     pthread_mutex_unlock(&entrance_lock[random_entrance]);
     pthread_cond_signal(&entrance_condition[random_entrance]);
-};
 
-void *exit_loop(void *arg) {
-    while (1) {
-        Car_t Auto = get_departing();
-        for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++) {
-            if (exit_threads[i] == 0) {
-                // Create a new car thread
-                pthread_create(&exit_threads[i], NULL, car_exit, &Auto);
-                break;
-            }
-        }
+    clock_t stop = clock();
+    while((int) stop < Auto.departure_time) {
+        stop = clock();
     }
-};
 
-void *car_exit(void *arg) {
-    Car_t Auto = *((Car_t *) arg);
     srand(get_seed());
     int random_exit = rand() % EXITS;
     pthread_mutex_lock(&exit_lock[random_exit]);
@@ -362,7 +338,7 @@ void *car_exit(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
-    printf("OUT===================> Car %s left the parking\n", Auto.plate);
+    printf("OUT============> Car %s left the parking\n", Auto.plate);
 };
 
 void temperature_loop() {
