@@ -101,26 +101,25 @@ int main() {
   //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
   //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
-  while(1);
+  //while(1);
   return 0;
 }
 
 void charge_car(Car_t *Auto) {
-  // Calculate the time the car has been in the car park
-  int time_in_parking_lot = Auto->departure_time - Auto->arrival_time;
   // Calculate the cost of the car's stay
-  double cost = time_in_parking_lot * RATE;
+  double cost = (clock() - Auto->arrival_time) * RATE;
+  printf("Car with plate \"%s\" charged: %f\n", Auto->plate, cost);
   //Increment the total revenue
   pthread_mutex_lock(&revenue_lock);
   revenue += cost;
   pthread_mutex_unlock(&revenue_lock);
+  printf("Current Revenue: %lf\n", revenue);
 };
 
 void add_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
       if (parked_cars[Auto.level][i].plate[0] == 0) {
-        parked_cars_count[Auto.level]++;
         parked_cars[Auto.level][i] = Auto;
         break;
       }
@@ -134,7 +133,6 @@ void remove_car(Car_t Auto) {
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
       if (strcmp(parked_cars[i][j].plate, Auto.plate) == 0) {
-        parked_cars_count[i]--;
         parked_cars[i][j] = (Car_t) {0};
         break;
       }
@@ -195,7 +193,7 @@ bool check_space(char *lvl) {
   for (int i = 0; i < (LEVELS); i++) {
     for (int j = 0; j < (LEVEL_CAPACITY); j++) {
       if (parked_cars[i][j].plate[0] == '\0') {
-      *lvl = i + 49; // Converts the level number to a char
+      *lvl = i;
       pthread_mutex_unlock(&parked_cars_mlock);
       return true;
       }
@@ -236,7 +234,7 @@ char get_boom_gate_status(BoomGate_t *boom_gate) {
 
 void set_sign(Sign_t *sign, char signal) {
   pthread_mutex_lock(&sign->mlock);
-  sign->display = signal;
+  sign->display = signal + 49; // Converts the level number to a char
   pthread_mutex_unlock(&sign->mlock);
   pthread_cond_signal(&sign->condition);
 };
@@ -264,6 +262,7 @@ int get_level_count(int level) {
 
 void *entrance_loop(void *arg) {
   Entrance_t *entrance = (Entrance_t *)arg;
+  Car_t Auto;
   char lvl;
   while(1) {
     char plate[6];
@@ -280,6 +279,10 @@ void *entrance_loop(void *arg) {
       // wait 20ms
       usleep(20000);
       lower_boom_gate(&entrance->boom_gate);
+      strcpy(Auto.plate, plate);
+      Auto.arrival_time = clock();
+      Auto.level = lvl;
+      add_car(Auto);
     }
     else {
       set_sign(&entrance->information_sign, 'F');
@@ -323,23 +326,34 @@ void *exit_loop(void *arg) {
 };
 
 void display_loop() {
-  revenue = 0;
+
   while(1) {
-    printf("Current Revenue: %lf\n\n", revenue);
+    //printf("Current Revenue: %lf\n\n", revenue);
     for (int i = 0; i < LEVELS; i++) {
-      printf("Level %d Vehicle Count: %d\n", i + 1, get_level_count(i));
+      int_buffer = get_level_count(i);
+      if(int_buffer != parked_cars_count[i]) {
+        printf("Level %d Vehicle Count: %d\n", i + 1, int_buffer);
+        parked_cars_count[i] = int_buffer;
+      }
     }
-    printf("\n");
     // Display the current status of all boom gates
     for (int i = 0; i < ENTRANCES; i++) {
-      printf("Entrance %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->entrances[i].boom_gate));
+      char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
+      if(char_buffer != entrance_boom_gate_status[i]) {
+        printf("Entrance %d Boom Gate Status: %c\n", i + 1, char_buffer);
+        entrance_boom_gate_status[i] = char_buffer;
+      }
     }
     for (int i = 0; i < EXITS; i++) {
-      printf("Exit %d Boom Gate Status: %c\n", i + 1, get_boom_gate_status(&Parking->exits[i].boom_gate));
+      char_buffer = get_boom_gate_status(&Parking->entrances[i].boom_gate);
+      if(char_buffer != exit_boom_gate_status[i]) {
+        printf("Exit %d Boom Gate Status: %c\n", i + 1, char_buffer);
+        exit_boom_gate_status[i] = char_buffer;
+      }
     }
     //wait 1s
-    sleep(1);
+    //sleep(1);
     //clear the console
-    printf("\033[2J\033[1;1H");
+    //printf("\033[2J\033[1;1H");
   }
 };

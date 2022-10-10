@@ -57,8 +57,7 @@ typedef struct CarPark CarPark_t;
 
 struct Car{
     char plate[6];
-    int arrival_time;
-    int departure_time;
+    clock_t arrival_time;
     char level;
 };
 

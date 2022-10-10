@@ -103,11 +103,6 @@ int main(){
     Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     
     incremental_seed = 0;
-    // initialise ParkedCars to all have plates of '000000'
-    for (int i = 0; i < LEVELS*LEVEL_CAPACITY; i++){
-        strcpy(ParkedCars[i].plate, "\0");
-        ParkedCars[i].departure_time = 0;
-    }
 
     // initialise the mutexes and conditions to be PTHREAD_PROCESS_SHARED
     pthread_mutexattr_init(&shared_mutex_attr);
@@ -285,22 +280,19 @@ void *car_generator_loop(void *arg) {
 };
 
 void *car_instance(void *arg) {
-    printf("Car created\n");
     Car_t Auto;
     get_random_plate(&Auto.plate[0]);
     srand(get_seed());
     int random_entrance = rand() % ENTRANCES;
     pthread_mutex_lock(&entrance_lock[random_entrance]);
-    
+    int departure_time;
     // wait 2ms
     usleep(2000);
     
     // Send the car to the entrance LPR
     send_plate(Auto.plate, &Parking->entrances[random_entrance].LPR);
-    printf("Plate sent: \"%s\"\nSize: %d", Auto.plate, sizeof(Auto.plate));
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
-    printf("Car level: %d\n", Auto.level);
     if (Auto.level < 0 || Auto.level > 4) {
         // The car is not allowed to enter
         pthread_mutex_unlock(&entrance_lock[random_entrance]);
@@ -314,17 +306,15 @@ void *car_instance(void *arg) {
         // wait 10ms
         usleep(10000);
         send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
-        Auto.departure_time = rand() % 9901 + 100;
+        departure_time = rand() % 9901 + 100;
+        Auto.arrival_time = clock();
         close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         printf("IN============> Car \"%s\" parked at level %c\n", Auto.plate, Auto.level+49);
     }
     pthread_mutex_unlock(&entrance_lock[random_entrance]);
     pthread_cond_signal(&entrance_condition[random_entrance]);
 
-    clock_t stop = clock();
-    while((int) stop < Auto.departure_time) {
-        stop = clock();
-    }
+    while((clock() - Auto.arrival_time) < departure_time);
 
     srand(get_seed());
     int random_exit = rand() % EXITS;
@@ -341,7 +331,7 @@ void *car_instance(void *arg) {
     close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
-    printf("OUT============> Car %s left the parking\n", Auto.plate);
+    printf("OUT===========> Car %s left the parking\n", Auto.plate);
 };
 
 void temperature_loop() {
