@@ -93,7 +93,8 @@ pthread_t exit_threads[EXITS];
 
 bool check_plate(char *plate);
 bool check_unique(char *plate);
-bool check_space(char *lvl);
+bool check_space();
+char get_level();
 
 void *entrance_loop(void *arg);
 void *level_loop(void *arg);

@@ -145,7 +145,6 @@ int main(){
     //temperature_loop();
 
     //pthread_create(&car_threads[0], NULL, car_entry, NULL);
-    //car_instance(NULL);
     while(1);
     return 0;
 };
@@ -157,9 +156,9 @@ void generate_plate(char *plate) {
     }
     // for the last 3 characters, generate a random capital letter
     for (int i = 3; i < 6; i++) {
-        plate[i] = rand() % 26 + 65;
+        plate[i] = (char) (rand() % 26 + 'A');
     }
-    plate[6] = '\0';
+    plate[6] = '\0'; // Without this the program breaks, it should cause a segfault but doesnt...... Lol
 };
 
 void get_random_plate_from_file(char *plate) {
@@ -182,7 +181,10 @@ void get_random_plate_from_file(char *plate) {
     for (int i = 0; i < line; i++) {
         while((c = fgetc(file)) != '\n');
     }
-    fgets(plate, 7, file);
+    for(int i = 0; i < 6; i++) {
+        plate[i] = fgetc(file);
+    }
+    plate[6] = '\0'; // Without this the program breaks, it should cause a segfault but doesnt...... Lol
     // close the file
     fclose(file);
 };
@@ -216,7 +218,7 @@ void get_random_plate(char *plate) {
     }
 };
 
-void send_plate(char plate[6], LPR_t *lpr) {
+void send_plate(char *plate, LPR_t *lpr) {
     pthread_mutex_lock(&lpr->mlock);
     strcpy(lpr->plate, plate);
     pthread_mutex_unlock(&lpr->mlock);
@@ -288,9 +290,8 @@ void *car_instance(void *arg) {
     int departure_time;
     // wait 2ms
     usleep(2000);
-    
     // Send the car to the entrance LPR
-    send_plate(Auto.plate, &Parking->entrances[random_entrance].LPR);
+    send_plate(&Auto.plate[0], &Parking->entrances[random_entrance].LPR);
     // Get the level from the information sign
     Auto.level = get_display(&Parking->entrances[random_entrance].information_sign);
     if (Auto.level < 0 || Auto.level > 4) {
@@ -324,7 +325,7 @@ void *car_instance(void *arg) {
     usleep(10000);
     
     // Send the car to the exit LPR
-    send_plate(Auto.plate, &Parking->exits[random_exit].LPR);
+    send_plate(&Auto.plate[0], &Parking->exits[random_exit].LPR);
     open_boom_gate(&Parking->exits[random_exit].boom_gate);
     // wait 10ms
     usleep(10000);

@@ -96,7 +96,9 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
   }
-
+  //pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
+  //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
+  //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
   //while(1);
   return 0;
@@ -116,10 +118,10 @@ void charge_car(Car_t *Auto) {
 void add_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
-      if (parked_cars[Auto.level][i].plate[0] == 0) {
-        parked_cars[Auto.level][i] = Auto;
-        break;
-      }
+    if (parked_cars[Auto.level][i].plate[0] == 0) {
+      parked_cars[Auto.level][i] = Auto;
+      break;
+    }
   }
   pthread_cond_signal(&parked_cars_condition);
   pthread_mutex_unlock(&parked_cars_mlock);
@@ -139,17 +141,19 @@ void remove_car(Car_t Auto) {
   pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-void get_car(Car_t *Auto) {
+Car_t get_car(Car_t Auto) {
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (strcmp(parked_cars[i][j].plate, Auto->plate) == 0) {
-        *Auto = parked_cars[i][j];
-        break;
+      if (strcmp(parked_cars[i][j].plate, Auto.plate) == 0) {
+        Auto = parked_cars[i][j];
+        pthread_mutex_unlock(&parked_cars_mlock);
+        return Auto;
       }
     }
   }
   pthread_mutex_unlock(&parked_cars_mlock);
+  return (Car_t) {0};
 };
 
 bool check_plate(char* plate) {
@@ -173,8 +177,8 @@ bool check_plate(char* plate) {
 
 bool check_unique(char* plate) {
   pthread_mutex_lock(&parked_cars_mlock);
-  for (int i = 0; i < (LEVELS); i++) {
-    for (int j = 0; j < (LEVEL_CAPACITY); j++) {
+  for (int i = 0; i < LEVELS; i++) {
+    for (int j = 0; j < LEVEL_CAPACITY; j++) {
       if (strcmp(parked_cars[i][j].plate, plate) == 0) {
         pthread_mutex_unlock(&parked_cars_mlock);
         return false;
@@ -185,19 +189,31 @@ bool check_unique(char* plate) {
   return true;
 };
 
-bool check_space(char *lvl) {
+bool check_space() {
   pthread_mutex_lock(&parked_cars_mlock);
-  for (int i = 0; i < (LEVELS); i++) {
-    for (int j = 0; j < (LEVEL_CAPACITY); j++) {
-      if (parked_cars[i][j].plate[0] == '\0') {
-      *lvl = i;
-      pthread_mutex_unlock(&parked_cars_mlock);
-      return true;
+  for (int i = 0; i < LEVEL_CAPACITY; i++) {
+    for (int j = 0; j < LEVELS; j++) {
+      if (parked_cars[j][i].plate[0] == '\0') {
+        pthread_mutex_unlock(&parked_cars_mlock);
+        return true;
       }
     }
   }
   pthread_mutex_unlock(&parked_cars_mlock);
   return false;
+};
+
+char get_level() {
+  pthread_mutex_lock(&parked_cars_mlock);
+  while(1) {
+    int lvl = rand() % LEVELS;
+    for (int j = 0; j < LEVEL_CAPACITY; j++) {
+      if (parked_cars[lvl][j].plate[0] == '\0') {
+        pthread_mutex_unlock(&parked_cars_mlock);
+        return lvl;
+      }
+    }
+  }
 };
 
 void raise_boom_gate(BoomGate_t *boom_gate) {
@@ -260,7 +276,7 @@ int get_level_count(int level) {
 void *entrance_loop(void *arg) {
   Entrance_t *entrance = (Entrance_t *)arg;
   Car_t Auto;
-  char lvl;
+  char lvl ;
   while(1) {
     char plate[6];
     pthread_mutex_lock(&entrance->LPR.mlock);
@@ -268,15 +284,19 @@ void *entrance_loop(void *arg) {
       pthread_cond_wait(&entrance->LPR.condition, &entrance->LPR.mlock);
     }
     strcpy(plate, entrance->LPR.plate);
-    strcpy(entrance->LPR.plate, (char[6]) {0});
+    entrance->LPR.plate[0] = '\0';
     pthread_mutex_unlock(&entrance->LPR.mlock);
-    if (check_plate(plate) && check_space(&lvl)) {
+    if (check_plate(plate) && check_space()) {
+      lvl = get_level();
       set_sign(&entrance->information_sign, lvl);
       raise_boom_gate(&entrance->boom_gate);
       // wait 20ms
       usleep(20000);
       lower_boom_gate(&entrance->boom_gate);
-      strcpy(Auto.plate, plate);
+      // Using strcmp makes plate overflow so a for loop is using instead
+      for (int i = 0; i < 6; i++) {
+        Auto.plate[i] = plate[i];
+      }
       Auto.arrival_time = clock();
       Auto.level = lvl;
       add_car(Auto);
@@ -296,7 +316,7 @@ void *level_loop(void *arg) {
     strcpy(Auto.plate, level->LPR.plate);
     *level->LPR.plate = '\0';
     pthread_mutex_unlock(&level->LPR.mlock);
-    get_car(&Auto);
+    Auto = get_car(Auto);
     Auto.level = (char) get_level_index(level);
     remove_car(Auto);
     add_car(Auto);
@@ -311,7 +331,7 @@ void *exit_loop(void *arg) {
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);
     pthread_mutex_unlock(&exit->LPR.mlock);
-    get_car(&Auto);
+    Auto = get_car(Auto);
     remove_car(Auto);
     charge_car(&Auto);
     raise_boom_gate(&exit->boom_gate);
