@@ -113,9 +113,11 @@ pthread_condattr_t shared_cond_attr;
 int incremental_seed;
 pthread_mutex_t seed_lock;
 int get_seed();
+bool alarm_active = false;
 
 pthread_t generator_thread;
 pthread_t temperature_loop_thread;
+pthread_t boom_gate_loop_thread;
 pthread_t car_thread;
 
 Car_t get_departing();
@@ -133,7 +135,7 @@ void send_plate(char plate[6], LPR_t *lpr);
 char get_display(Sign_t *sign);
 
 void open_boom_gate(BoomGate_t *boom_gate);
-void close_boom_gate(BoomGate_t *boom_gate);
+void *close_boom_gate_loop(void *arg);
 
 int get_seed();
 //void send_to_random_entrance(Car_t Auto);
@@ -141,6 +143,6 @@ int get_seed();
 
 //void set_random_temperature(int lvl);
 
-void *car_generator_loop(void *arg);
+void car_generator_loop();
 void *car_instance(void *arg);
-void temperature_loop();
+void *temperature_loop(void *arg);

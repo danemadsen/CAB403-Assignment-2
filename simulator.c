@@ -122,6 +122,8 @@ int main(){
         pthread_cond_init(&Parking->entrances[i].boom_gate.condition, &shared_cond_attr);
         pthread_mutex_init(&Parking->entrances[i].information_sign.mlock, &shared_mutex_attr);
         pthread_cond_init(&Parking->entrances[i].information_sign.condition, &shared_cond_attr);
+        pthread_create(&boom_gate_loop_thread, NULL, close_boom_gate_loop, &Parking->entrances[i].boom_gate);
+        pthread_detach(boom_gate_loop_thread);
     }
     for (int i = 0; i < EXITS; i++) {
         nums[i] = i;
@@ -132,16 +134,19 @@ int main(){
         pthread_cond_init(&Parking->exits[i].LPR.condition, &shared_cond_attr);
         pthread_mutex_init(&Parking->exits[i].boom_gate.mlock, &shared_mutex_attr);
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, &shared_cond_attr);
+        pthread_create(&boom_gate_loop_thread, NULL, close_boom_gate_loop, &Parking->exits[i].boom_gate);
+        pthread_detach(boom_gate_loop_thread);
     }
     for (int i = 0; i < LEVELS; i++) {
         Parking->levels[i].temperature = 20;
+        Parking->levels[i].alarm = 0;
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, &shared_mutex_attr);
         pthread_cond_init(&Parking->levels[i].LPR.condition, &shared_cond_attr);
-        printf("Temperature on level %d is %d\n", i+1, Parking->levels[i].temperature);
+        pthread_create(&temperature_loop_thread, NULL, temperature_loop, &Parking->levels[i]);
+        pthread_detach(temperature_loop_thread);
     }
 
-    pthread_create(&generator_thread, NULL, car_generator_loop, NULL);
-    temperature_loop();
+    car_generator_loop();
     //while(1);
     return 0;
 };
@@ -235,28 +240,30 @@ char get_display(Sign_t *sign) {
 
 void open_boom_gate(BoomGate_t *boom_gate) {
     pthread_mutex_lock(&boom_gate->mlock);
-    if(boom_gate->status == 'L') boom_gate->status = 'C';
-    while (boom_gate->status != 'R') {
+    while (boom_gate->status != 'R' && boom_gate->status != 'O') {
         pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
     }
     // wait 10ms
     usleep(10000*TIMESCALE);
     boom_gate->status = 'O';
     pthread_mutex_unlock(&boom_gate->mlock);
-    pthread_cond_signal(&boom_gate->condition);
+    pthread_cond_broadcast(&boom_gate->condition);
 };
 
-void close_boom_gate(BoomGate_t *boom_gate) {
-    pthread_mutex_lock(&boom_gate->mlock);
-    if (boom_gate->status == 'R') boom_gate->status = 'O';
-    while (boom_gate->status != 'L') {
-        pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+void *close_boom_gate_loop(void *arg) {
+    BoomGate_t *boom_gate = (BoomGate_t *)arg;
+    
+    while(1) {
+        pthread_mutex_lock(&boom_gate->mlock);
+        while (boom_gate->status != 'L') {
+            pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+        }
+        // wait 10ms
+        usleep(10000*TIMESCALE);
+        boom_gate->status = 'C';
+        pthread_mutex_unlock(&boom_gate->mlock);
+        pthread_cond_broadcast(&boom_gate->condition);
     }
-    // wait 10ms
-    usleep(10000*TIMESCALE);
-    boom_gate->status = 'C';
-    pthread_mutex_unlock(&boom_gate->mlock);
-    pthread_cond_signal(&boom_gate->condition);
 };
 
 int get_seed() {
@@ -267,7 +274,7 @@ int get_seed() {
     return seed;
 };
 
-void *car_generator_loop(void *arg) {
+void car_generator_loop() {
     while (1) {
         srand(get_seed());
         // wait 1-100ms
@@ -275,6 +282,7 @@ void *car_generator_loop(void *arg) {
         // create a new car
         pthread_create(&car_thread, NULL, car_instance, NULL);
         pthread_detach(car_thread);
+        alarm_active = &Parking->levels[0].alarm;
     }
 };
 
@@ -296,8 +304,8 @@ void *car_instance(void *arg) {
         pthread_mutex_unlock(&entrance_lock[random_entrance]);
         pthread_cond_signal(&entrance_condition[random_entrance]);
         printf("\033[41mREJECTED =>\033[0m Car %s is not allowed to enter\n", Auto.plate);
-        //pthread_exit(NULL);
-        return NULL;
+        pthread_exit(NULL);
+        //return NULL;
     }
     else {
         open_boom_gate(&Parking->entrances[random_entrance].boom_gate);
@@ -306,43 +314,45 @@ void *car_instance(void *arg) {
         send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
         departure_time = (rand() % 9901 + 100)*TIMESCALE;
         Auto.arrival_time = clock();
-        close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
+        //close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         printf("\033[44mIN       =>\033[0m Car %s parked at level %c\n", Auto.plate, Auto.level+49);
     }
     pthread_mutex_unlock(&entrance_lock[random_entrance]);
     pthread_cond_signal(&entrance_condition[random_entrance]);
 
-    while((clock() - Auto.arrival_time) < departure_time);
+    while((clock() - Auto.arrival_time) < departure_time && !alarm_active);
 
     srand(get_seed());
     int random_exit = rand() % EXITS;
     pthread_mutex_lock(&exit_lock[random_exit]);
     
     // wait 10ms
-    usleep(10000*TIMESCALE);
+    usleep(10000*TIMESCALE*!alarm_active);
     
     // Send the car to the exit LPR
     send_plate(&Auto.plate[0], &Parking->exits[random_exit].LPR);
     open_boom_gate(&Parking->exits[random_exit].boom_gate);
-    // wait 10ms
-    usleep(10000*TIMESCALE);
-    close_boom_gate(&Parking->exits[random_exit].boom_gate);
     pthread_mutex_unlock(&exit_lock[random_exit]);
     pthread_cond_signal(&exit_condition[random_exit]);
+    // wait 10ms
+    //usleep(10000*TIMESCALE);
+    //close_boom_gate(&Parking->exits[random_exit].boom_gate);
     printf("\033[45mOUT      =>\033[0m Car %s left the car park\n", Auto.plate);
 };
 
-void temperature_loop() {
+void *temperature_loop(void *arg) {
+    uint16_t *temperature = (uint16_t *)arg;
     uint16_t temperature_buffer;
-    while (1) {
+    while (!alarm_active) {
         srand(get_seed());
         // wait 1-5ms
         usleep(((rand() % 5000) + 1000)*TIMESCALE);
         for (int i = 0; i < LEVELS; i++) {
             srand(get_seed()*(i+1));
-            temperature_buffer = Parking->levels[i].temperature;
-            Parking->levels[i].temperature = MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % MIN(temperature_buffer + MAX_TEMP_CHANGE + 1, MAX_TEMP));
-            printf("\033[42mTEMP     =>\033[0m Level %d temperature changed from %d to %d\n", i+1, temperature_buffer, Parking->levels[i].temperature);
+            temperature_buffer = *temperature;
+            *temperature = MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % MIN(temperature_buffer + MAX_TEMP_CHANGE + 1, MAX_TEMP));
+            //printf("\033[42mTEMP     =>\033[0m Level %d temperature changed from %d to %d\n", i+1, temperature_buffer, Parking->levels[i].temperature);
         }
     }
+    pthread_exit(NULL);
 };

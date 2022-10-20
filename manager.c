@@ -219,9 +219,18 @@ char get_level() {
   }
 };
 
+void force_open_boom_gate(BoomGate_t *boom_gate){
+  pthread_mutex_lock(&boom_gate->mlock);
+  while (boom_gate->status != 'O') {
+    boom_gate->status = 'R';
+    pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
+  }
+  pthread_mutex_unlock(&boom_gate->mlock);
+  pthread_cond_broadcast(&boom_gate->condition);
+};
+
 void raise_boom_gate(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
-  if (boom_gate->status == 'O') boom_gate->status = 'L';
   while (boom_gate->status != 'C') {
     pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
   }
@@ -232,7 +241,6 @@ void raise_boom_gate(BoomGate_t *boom_gate) {
 
 void lower_boom_gate(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
-  if (boom_gate->status == 'C') boom_gate->status = 'R';
   while (boom_gate->status != 'O') {
     pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
   }
@@ -276,11 +284,19 @@ int get_level_count(int level) {
   return count;
 };
 
+int get_total_count() {
+  int count = 0;
+  for (int i = 0; i < LEVELS; i++) {
+    count += get_level_count(i);
+  }
+  return count;
+};
+
 void *entrance_loop(void *arg) {
   Entrance_t *entrance = (Entrance_t *)arg;
   Car_t Auto;
   char lvl ;
-  while(1) {
+  while(!alarm_active) {
     char plate[6];
     pthread_mutex_lock(&entrance->LPR.mlock);
     while(entrance->LPR.plate[0] == 0) {
@@ -304,16 +320,17 @@ void *entrance_loop(void *arg) {
       Auto.level = lvl;
       add_car(Auto);
     }
-    else {
-      // 21 is the code for Negitive Ack in ASCII and converts to 'F' in the display
-      set_sign(&entrance->information_sign, 21); 
+    else{
+      if (!check_space()) set_sign(&entrance->information_sign, 21); // Converts to char 'F'
+      else if (!check_plate(plate)) set_sign(&entrance->information_sign, 39); // Converts to char 'X'
     }
   }
+  pthread_exit(NULL);
 };
 
 void *level_loop(void *arg) {
   Level_t *level = (Level_t *)arg;
-  while(1) {
+  while(!alarm_active) { 
     Car_t Auto;
     pthread_mutex_lock(&level->LPR.mlock);
     pthread_cond_wait(&level->LPR.condition, &level->LPR.mlock);
@@ -324,13 +341,17 @@ void *level_loop(void *arg) {
     Auto.level = (char) get_level_index(level);
     remove_car(Auto);
     add_car(Auto);
+    if(level->alarm == 1) {
+      alarm_active = true;
+    }
   }
+  pthread_exit(NULL);
 };
 
 void *exit_loop(void *arg) {
   Exit_t *exit = (Exit_t *)arg;
-  while(1) {
-    Car_t Auto;
+  Car_t Auto;
+  while(!alarm_active) {
     pthread_mutex_lock(&exit->LPR.mlock);
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);
@@ -344,6 +365,15 @@ void *exit_loop(void *arg) {
     lower_boom_gate(&exit->boom_gate);
     *exit->LPR.plate = '\0';
   }
+  while(get_total_count() > 0){
+    pthread_mutex_lock(&exit->LPR.mlock);
+    pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
+    strcpy(Auto.plate, exit->LPR.plate);
+    pthread_mutex_unlock(&exit->LPR.mlock);
+    Auto = get_car(Auto);
+    remove_car(Auto);
+  }
+  pthread_exit(NULL);
 };
 
 void display_loop() {
@@ -387,6 +417,9 @@ void display_loop() {
            get_level_count(4),
            revenue);
     usleep(1000);
-    printf("\033[H\033[J");
+    system("clear");
+    if(alarm_active && !get_total_count()) {
+      
+    }
   }
 };

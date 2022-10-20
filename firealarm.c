@@ -56,13 +56,17 @@ int main()
 	Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
 	for (int i = 0; i < LEVELS; i++) {
-		pthread_create(&level_threads[i], NULL, (void *(*)(void *)) temperature_monitor, &Parking->levels[i]);
+		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
 	}
 	
 	while(!alarm_active) {
-		usleep(1000);
+		usleep(1000*TIMESCALE);
 	}
 	emergency_mode();
+	for (int i = 0; i < LEVELS; i++) {
+		pthread_join(level_threads[i], NULL);
+	}
+	return 0;
 }
 
 void emergency_mode() {
@@ -70,25 +74,25 @@ void emergency_mode() {
 	
 	// Handle the alarm system and open boom gates
 	// Activate alarms on all levels
+	for(int i = 0; i < ENTRANCES; i++) {
+		pthread_mutex_lock(&Parking->entrances[i].boom_gate.mlock);
+		Parking->entrances[i].boom_gate.status = 'O';
+		pthread_cond_broadcast(&Parking->entrances[i].boom_gate.condition);
+		pthread_mutex_unlock(&Parking->entrances[i].boom_gate.mlock);
+	}
 	for (int i = 0; i < LEVELS; i++) {
-		uint8_t *alarm_trigger = &Parking->levels[i].alarm;
-		*alarm_trigger = 1;
+		Parking->levels[i].alarm = 1;
 	}
-	
-	// Open up all boom gates
-	pthread_t boom_gate_threads[ENTRANCES * EXITS];
-	for (int i = 0; i < ENTRANCES; i++) {
-		BoomGate_t *boomgate = &Parking->entrances[i].boom_gate;
-		pthread_create(&boom_gate_threads[i], NULL, open_boom_gate, boomgate);
-	}
-	for (int i = 0; i < EXITS; i++) {
-		BoomGate_t *boomgate = &Parking->exits[i].boom_gate;
-		pthread_create(&boom_gate_threads[ENTRANCES - 1 + i], NULL, open_boom_gate, boomgate);
+	for(int i = 0; i < EXITS; i++) {
+		pthread_mutex_lock(&Parking->exits[i].boom_gate.mlock);
+		Parking->exits[i].boom_gate.status = 'O';
+		pthread_cond_broadcast(&Parking->exits[i].boom_gate.condition);
+		pthread_mutex_unlock(&Parking->exits[i].boom_gate.mlock);
 	}
 	
 	// Show evacuation message on an endless loop
 	while(1) {
-		char *evacmessage = "EVACUATE ";
+		char *evacmessage = "EVACUATE";
 		for (char *p = evacmessage; *p != '\0'; p++) {
 			for (int i = 0; i < ENTRANCES; i++) {
 				pthread_mutex_lock(&Parking->entrances[i].information_sign.mlock);
@@ -96,16 +100,9 @@ void emergency_mode() {
 				pthread_cond_broadcast(&Parking->entrances[i].information_sign.condition);
 				pthread_mutex_unlock(&Parking->entrances[i].information_sign.mlock);
 			}
-			usleep(20000);
+			usleep(20000*TIMESCALE);
 		}
 	}
-	
-	for (int i = 0; i < LEVELS; i++) {
-		pthread_join(level_threads[i], NULL);
-	}
-	
-	munmap((void *)Parking, SIZE);
-	close(shm_fd);
 }
 
 void *temperature_monitor(void *arg) {
@@ -162,20 +159,4 @@ uint16_t median_temperature(uint16_t temperatures[MEDIAN_SAMPLES])
 		return floor(median / MEDIAN_SAMPLES);
 	}
 	else return 0;
-}
-
-void *open_boom_gate(void *arg)
-{
-	struct BoomGate *boomgate = arg;
-	pthread_mutex_lock(&boomgate->mlock);
-	for (;;) {
-		if (boomgate->status == 'C') {
-			boomgate->status = 'R';
-			pthread_cond_broadcast(&boomgate->condition);
-		}
-		if (boomgate->status == 'O') {
-		}
-		pthread_cond_wait(&boomgate->condition, &boomgate->mlock);
-	}
-	pthread_mutex_unlock(&boomgate->mlock);
 }
