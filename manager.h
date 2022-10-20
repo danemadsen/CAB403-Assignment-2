@@ -71,8 +71,6 @@ for more information.)
 #include <string.h>
 #include "common.h"
 
-#define RATE 0.05
-
 int shm_fd = -1;
 CarPark_t* Parking;
 double revenue;

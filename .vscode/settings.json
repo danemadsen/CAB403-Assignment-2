@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "compare": "c",
+        "concepts": "c",
+        "typeinfo": "c"
     },
 }

@@ -137,15 +137,12 @@ int main(){
         Parking->levels[i].temperature = 20;
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, &shared_mutex_attr);
         pthread_cond_init(&Parking->levels[i].LPR.condition, &shared_cond_attr);
+        printf("Temperature on level %d is %d\n", i+1, Parking->levels[i].temperature);
     }
 
-
     pthread_create(&generator_thread, NULL, car_generator_loop, NULL);
-    //pthread_create(&exit_loop_thread, NULL, exit_loop, NULL);
-    //temperature_loop();
-
-    //pthread_create(&car_threads[0], NULL, car_entry, NULL);
-    while(1);
+    temperature_loop();
+    //while(1);
     return 0;
 };
 
@@ -336,13 +333,16 @@ void *car_instance(void *arg) {
 };
 
 void temperature_loop() {
+    uint16_t temperature_buffer;
     while (1) {
         srand(get_seed());
         // wait 1-5ms
         usleep(((rand() % 5000) + 1000)*TIMESCALE);
         for (int i = 0; i < LEVELS; i++) {
             srand(get_seed()*(i+1));
-            Parking->levels[i].temperature += rand() % 7 - 3;
+            temperature_buffer = Parking->levels[i].temperature;
+            Parking->levels[i].temperature = MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % MIN(temperature_buffer + MAX_TEMP_CHANGE + 1, MAX_TEMP));
+            printf("\033[42mTEMP     =>\033[0m Level %d temperature changed from %d to %d\n", i+1, temperature_buffer, Parking->levels[i].temperature);
         }
     }
 };

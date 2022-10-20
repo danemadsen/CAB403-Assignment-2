@@ -44,9 +44,17 @@ Student Email: n10983864@qut.edu.au
 #define ENTRANCES 5
 #define EXITS 5
 
+#define RATE 0.05
+
+#define MAX_TEMP_CHANGE 2
+#define MAX_TEMP 60
+#define MEDIAN_SAMPLES 5
+#define SMOOTHED_SAMPLES 30
+
 #define TIMESCALE 1
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 typedef struct Car Car_t;
 typedef struct LicencePlateRecognition LPR_t;
