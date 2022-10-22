@@ -80,11 +80,6 @@ int main() {
   Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
   revenue = 0;
-  set_sign(&Parking->entrances[0].information_sign, 'N'-49);
-  set_sign(&Parking->entrances[1].information_sign, 'N'-49);
-  set_sign(&Parking->entrances[2].information_sign, 'N'-49);
-  set_sign(&Parking->entrances[3].information_sign, 'N'-49);
-  set_sign(&Parking->entrances[4].information_sign, 'N'-49);
 
   //Initialise the mutexes and conditions
   pthread_mutex_init(&parked_cars_mlock, NULL);
@@ -101,9 +96,6 @@ int main() {
   for (int i = 0; i < EXITS; i++) {
     pthread_create(&exit_threads[i], NULL, exit_loop, &Parking->exits[i]);
   }
-  //pthread_create(&entrance_threads[0], NULL, entrance_loop, &Parking->entrances[0]);
-  //pthread_create(&level_threads[0], NULL, level_loop, &Parking->levels[0]);
-  //pthread_create(&exit_threads[0], NULL, exit_loop, &Parking->exits[0]);
   display_loop();
   //while(1);
   return 0;
@@ -206,6 +198,15 @@ bool check_space() {
   return false;
 };
 
+bool check_alarm() {
+  for (int i = 0; i < LEVELS; i++) {
+    if(Parking->levels[i].alarm) {
+      return true;
+    }
+  }
+  return false;
+};
+
 char get_level() {
   pthread_mutex_lock(&parked_cars_mlock);
   while(1) {
@@ -296,7 +297,7 @@ void *entrance_loop(void *arg) {
   Entrance_t *entrance = (Entrance_t *)arg;
   Car_t Auto;
   char lvl ;
-  while(!alarm_active) {
+  while(!check_alarm()) {
     char plate[6];
     pthread_mutex_lock(&entrance->LPR.mlock);
     while(entrance->LPR.plate[0] == 0) {
@@ -330,7 +331,7 @@ void *entrance_loop(void *arg) {
 
 void *level_loop(void *arg) {
   Level_t *level = (Level_t *)arg;
-  while(!alarm_active) { 
+  while(!check_alarm()) { 
     Car_t Auto;
     pthread_mutex_lock(&level->LPR.mlock);
     pthread_cond_wait(&level->LPR.condition, &level->LPR.mlock);
@@ -341,9 +342,6 @@ void *level_loop(void *arg) {
     Auto.level = (char) get_level_index(level);
     remove_car(Auto);
     add_car(Auto);
-    if(level->alarm == 1) {
-      alarm_active = true;
-    }
   }
   pthread_exit(NULL);
 };
@@ -351,7 +349,7 @@ void *level_loop(void *arg) {
 void *exit_loop(void *arg) {
   Exit_t *exit = (Exit_t *)arg;
   Car_t Auto;
-  while(!alarm_active) {
+  while(!check_alarm()) {
     pthread_mutex_lock(&exit->LPR.mlock);
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);
@@ -378,6 +376,7 @@ void *exit_loop(void *arg) {
 
 void display_loop() {
   while(1) {
+    system("clear");
     printf("████████████████████████████████████████████████████████████████████████\n"
            "█                              PARKING LOT                             █\n"
            "████████████████████████████████████████████████████████████████████████\n"
@@ -416,10 +415,6 @@ void display_loop() {
            get_level_count(3),
            get_level_count(4),
            revenue);
-    usleep(1000);
-    system("clear");
-    if(alarm_active && !get_total_count()) {
-      
-    }
+    usleep(10000);
   }
 };

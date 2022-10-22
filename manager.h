@@ -73,10 +73,8 @@ for more information.)
 
 int shm_fd = -1;
 CarPark_t* Parking;
-double revenue;
+volatile double revenue;
 bool alarm_active = false;
-char entrance_boom_gate_status[ENTRANCES];
-char exit_boom_gate_status[EXITS];
 
 Car_t parked_cars[LEVELS][LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];
