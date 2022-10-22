@@ -37,22 +37,23 @@ Student Email: n10983864@qut.edu.au
 #include <unistd.h>
 #include <fcntl.h>
 
+
+// -------------------------------- Settings --------------------------------
+#define LEVELS 5            // number of levels in the car park
+#define LEVEL_CAPACITY 20   // number of spaces on each level
+#define ENTRANCES 5         // number of entrances to the car park
+#define EXITS 5             // number of exits from the car park
+#define RATE 0.05           // amount cars are charged per ms
+#define FIRE_CHANCE 5000    // chance of fire occuring per temperature cycle
+#define BASE_TEMP_CHANGE 1  // base temperature change
+#define MAX_TEMP 60         // maximum temperature
+#define MEDIAN_SAMPLES 5    // number of samples to take for median
+#define SMOOTHED_SAMPLES 30 // number of samples to take for smoothed
+#define TIMESCALE 1         // timescale of simulation
+// ---------------------------------------------------------------------------
+
 #define SHM_NAME "PARKING"
 #define SIZE 2930
-#define LEVELS 5
-#define LEVEL_CAPACITY 20
-#define ENTRANCES 5
-#define EXITS 5
-
-#define RATE 0.05
-
-#define FIRE_CHANCE 5000
-#define BASE_TEMP_CHANGE 1
-#define MAX_TEMP 60
-#define MEDIAN_SAMPLES 5
-#define SMOOTHED_SAMPLES 30
-
-#define TIMESCALE 1
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
