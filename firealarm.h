@@ -44,14 +44,9 @@ and display an evacuation message on the information signs
 #include <string.h>
 #include "common.h"
 
-int shm_fd = -1;
-CarPark_t* Parking;
-
 pthread_t level_threads[LEVELS];
 
 volatile int alarm_active = 0;
-//pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
-//pthread_cond_t alarm_condvar = PTHREAD_COND_INITIALIZER;
 
 void emergency_mode();
 void *temperature_monitor(void *arg);

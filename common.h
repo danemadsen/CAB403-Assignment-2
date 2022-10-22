@@ -117,3 +117,6 @@ struct CarPark{
     struct Level levels[LEVELS];
     struct Exit exits[EXITS];
 };
+
+int shm_fd = -1;
+CarPark_t* Parking;

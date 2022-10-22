@@ -71,8 +71,6 @@ for more information.)
 #include <string.h>
 #include "common.h"
 
-int shm_fd = -1;
-CarPark_t* Parking;
 volatile double revenue;
 bool alarm_active = false;
 

@@ -93,8 +93,6 @@ the level LPR for the second time).
 #include <stdbool.h>
 #include "common.h"
 
-int shm_fd;
-CarPark_t* Parking;
 int nums[MAX(ENTRANCES, EXITS)];
 
 Car_t ParkedCars[LEVELS*LEVEL_CAPACITY];
