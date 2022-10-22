@@ -226,11 +226,12 @@ void send_plate(char *plate, LPR_t *lpr) {
 
 char get_display(Sign_t *sign) {
     pthread_mutex_lock(&sign->mlock);
+    sign->display = ' ';
+    pthread_cond_signal(&sign->condition);
     while(sign->display == ' ') {
         pthread_cond_wait(&sign->condition, &sign->mlock);
     }
     char display = sign->display;
-    sign->display = ' ';
     pthread_mutex_unlock(&sign->mlock);
     return display-49;
 };

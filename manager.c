@@ -272,6 +272,9 @@ char get_boom_gate_status(BoomGate_t *boom_gate) {
 
 void set_sign(Sign_t *sign, char signal) {
   pthread_mutex_lock(&sign->mlock);
+  while(sign->display != ' ') {
+    pthread_cond_wait(&sign->condition, &sign->mlock);
+  }
   sign->display = signal + 49; // Converts the level number to a char
   pthread_mutex_unlock(&sign->mlock);
   pthread_cond_signal(&sign->condition);
