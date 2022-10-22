@@ -135,7 +135,6 @@ int main(){
         pthread_cond_init(&Parking->exits[i].boom_gate.condition, &shared_cond_attr);
     }
     for (int i = 0; i < LEVELS; i++) {
-        Parking->levels[i].temperature = 20;
         Parking->levels[i].alarm = 0;
         pthread_mutex_init(&Parking->levels[i].LPR.mlock, &shared_mutex_attr);
         pthread_cond_init(&Parking->levels[i].LPR.condition, &shared_cond_attr);
@@ -336,16 +335,48 @@ void *car_instance(void *arg) {
 
 void *temperature_loop(void *arg) {
     uint16_t *temperature = (uint16_t *)arg;
-    uint16_t temperature_buffer;
+    *temperature = 20;
+    signed short previous_temperature = 20;
+    uint8_t increase_factor = BASE_TEMP_CHANGE, decrease_factor = BASE_TEMP_CHANGE;
+    uint8_t explosion = 0;
+    uint8_t inferno = 0;
     while (!alarm_active) {
         srand(get_seed());
         // wait 1-5ms
         usleep(((rand() % 5000) + 1000)*TIMESCALE);
-        for (int i = 0; i < LEVELS; i++) {
-            srand(get_seed()*(i+1));
-            temperature_buffer = *temperature;
-            *temperature = MIN(MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % temperature_buffer + MAX_TEMP_CHANGE + 2), MAX_TEMP);
-            //printf("\033[42mTEMP     =>\033[0m Level %d temperature changed from %d to %d\n", i+1, temperature_buffer, Parking->levels[i].temperature);
+        srand(get_seed());
+
+        if(previous_temperature != *temperature) {
+            increase_factor = (previous_temperature < *temperature) ? increase_factor - 1 : increase_factor + 1;
+            decrease_factor = (previous_temperature > *temperature) ? decrease_factor - 1 : decrease_factor + 1;
+        }
+
+        previous_temperature = *temperature;
+        *temperature = MAX(MIN(previous_temperature - decrease_factor + (rand() % (increase_factor + decrease_factor + inferno)), MAX_TEMP), 0);
+
+        // There is a 1 in FIRE_CHANCE * LEVELS chance of a fire occuring
+        if(rand() % (FIRE_CHANCE * LEVELS) == 403) {
+            // When a fire occurs there is a 50/50 chance it is an inferno or an explosion
+            if(rand() % 2) {
+                explosion = 6; // An explosion gets hot fast but disappears quickly
+            }
+            else {
+                inferno = 1; // An inferno gets hot slowly but lasts a long time
+            }
+        }
+
+        if(explosion) {
+            explosion--;
+            if(!explosion) {
+                *temperature = 20;
+            }
+            else {
+                *temperature = MAX_TEMP;
+            }
+        }
+
+        if(*temperature > 21){
+            printf("\033[42mTEMPERATURE =>\033[0m %d\n", *temperature);
         }
     }
     pthread_exit(NULL);

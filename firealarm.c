@@ -109,7 +109,7 @@ void *temperature_monitor(void *arg) {
 	Level_t *level = (Level_t *)arg;
 	uint16_t temperatures[MEDIAN_SAMPLES];
 	uint16_t smoothed_temperatures[SMOOTHED_SAMPLES];
-	uint8_t under_samples = SMOOTHED_SAMPLES, hightemps;
+	uint8_t under_samples = SMOOTHED_SAMPLES*MEDIAN_SAMPLES, hightemps;
 	
 	while(1) {
 		if(alarm_active) {

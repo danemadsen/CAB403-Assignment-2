@@ -46,7 +46,8 @@ Student Email: n10983864@qut.edu.au
 
 #define RATE 0.05
 
-#define MAX_TEMP_CHANGE 2
+#define FIRE_CHANCE 5000
+#define BASE_TEMP_CHANGE 1
 #define MAX_TEMP 60
 #define MEDIAN_SAMPLES 5
 #define SMOOTHED_SAMPLES 30

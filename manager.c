@@ -100,7 +100,7 @@ int main() {
   display_loop();
   //while(1);
   return 0;
-}
+};
 
 void charge_car(Car_t *Auto) {
   // Calculate the cost of the car's stay
