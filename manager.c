@@ -107,14 +107,8 @@ void charge_car(Car_t *Auto) {
   double cost = (clock() - Auto->arrival_time) * RATE;
   
   // Create a new text file for the bill
-  mkdir("bills", 0777);
-  char filename[50];
-  sprintf(filename, "bills/%s.txt", Auto->plate);
-  FILE *bill = fopen(filename, "w");
-  fprintf(bill, "Plate: %s\n", Auto->plate);
-  fprintf(bill, "Arrival time: %ld\n", Auto->arrival_time);
-  fprintf(bill, "Departure time: %ld\n", clock());
-  fprintf(bill, "Cost: %f\n", cost);
+  FILE *bill = fopen("billing.txt", "a");
+  fprintf(bill, "%s $%0.01lf\n", Auto->plate, cost);
   fclose(bill);
 
   //Increment the total revenue
