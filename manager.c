@@ -104,6 +104,7 @@ int main() {
 
 void charge_car(Car_t *Auto) {
   // Calculate the cost of the car's stay
+  if(Auto->plate[0] == '\0') return;
   double cost = (clock() - Auto->arrival_time) * RATE;
   
   // Create a new text file for the bill
