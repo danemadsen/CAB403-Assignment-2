@@ -276,9 +276,6 @@ void car_generator_loop() {
         pthread_create(&car_thread, NULL, car_instance, NULL);
         pthread_detach(car_thread);
         alarm_active = Parking->levels[0].alarm;
-        if(alarm_active) {
-            printf("Alarm active, no more cars can enter the parking lot\n");
-        }
     }
 };
 
@@ -346,7 +343,7 @@ void *temperature_loop(void *arg) {
         for (int i = 0; i < LEVELS; i++) {
             srand(get_seed()*(i+1));
             temperature_buffer = *temperature;
-            *temperature = MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % MIN(temperature_buffer + MAX_TEMP_CHANGE + 1, MAX_TEMP));
+            *temperature = MIN(MAX(temperature_buffer - MAX_TEMP_CHANGE, rand() % temperature_buffer + MAX_TEMP_CHANGE + 2), MAX_TEMP);
             //printf("\033[42mTEMP     =>\033[0m Level %d temperature changed from %d to %d\n", i+1, temperature_buffer, Parking->levels[i].temperature);
         }
     }
