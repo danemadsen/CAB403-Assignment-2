@@ -67,7 +67,7 @@ typedef struct Level Level_t;
 typedef struct CarPark CarPark_t;
 
 #define SHM_NAME "PARKING"
-#define SIZE sizeof(CarPark_t) // Default 2930
+#define SHM_SIZE sizeof(CarPark_t) // Default 2930
 
 struct Car{
     char plate[6];

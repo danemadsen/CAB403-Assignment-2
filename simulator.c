@@ -99,8 +99,8 @@ int main(){
     shm_unlink(SHM_NAME);
     // Setup the shared memory segement
     shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
-    ftruncate(shm_fd, SIZE);
-    Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    ftruncate(shm_fd, SHM_SIZE);
+    Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     
     incremental_seed = 0;
 

@@ -78,7 +78,7 @@ int main() {
     printf("Waiting for shared memory segment to be created...\n");
     sleep(1);
   }
-  Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   
   revenue = 0;
 

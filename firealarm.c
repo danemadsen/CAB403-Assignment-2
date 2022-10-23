@@ -53,7 +53,7 @@ int main()
 		printf("Waiting for shared memory segment to be created...\n");
 		sleep(1);
 	}
-	Parking = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
 	for (int i = 0; i < LEVELS; i++) {
 		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
