@@ -116,7 +116,7 @@ pthread_t car_thread;
 void generate_plate(char *plate);
 void get_random_plate_from_file(char* plate);
 void get_random_plate(char* plate);
-void send_plate(char plate[6], LPR_t *lpr);
+void send_plate(char *plate, LPR_t *lpr);
 
 char get_display(Sign_t *sign);
 

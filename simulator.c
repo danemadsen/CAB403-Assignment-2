@@ -285,7 +285,7 @@ void *car_instance(void *arg) {
         open_boom_gate(&Parking->entrances[random_entrance].boom_gate);
         // wait 10ms
         usleep(10000*TIMESCALE);
-        send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
+        send_plate(Auto.plate, &Parking->levels[(int) Auto.level].LPR);
         departure_time = (rand() % 9901 + 100)*TIMESCALE;
         Auto.arrival_time = clock();
         if(!alarm_active) close_boom_gate(&Parking->entrances[random_entrance].boom_gate);
@@ -296,7 +296,7 @@ void *car_instance(void *arg) {
 
     while((clock() - Auto.arrival_time) < departure_time && !alarm_active);
 
-    send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
+    send_plate(Auto.plate, &Parking->levels[(int) Auto.level].LPR);
 
     srand(get_seed());
     int random_exit = rand() % EXITS;
@@ -314,6 +314,7 @@ void *car_instance(void *arg) {
     usleep(10000*TIMESCALE);
     if(!alarm_active) close_boom_gate(&Parking->exits[random_exit].boom_gate);
     printf("\033[45mOUT      =>\033[0m Car %s left the car park\n", Auto.plate);
+    return arg;
 };
 
 void *temperature_loop(void *arg) {

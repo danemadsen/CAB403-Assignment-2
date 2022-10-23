@@ -122,8 +122,8 @@ void charge_car(Car_t *Auto) {
 void add_parked_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
-    if (parked_cars[Auto.level][i].plate[0] == 0) {
-      parked_cars[Auto.level][i] = Auto;
+    if (parked_cars[(int) Auto.level][i].plate[0] == 0) {
+      parked_cars[(int) Auto.level][i] = Auto;
       break;
     }
   }
