@@ -15,6 +15,6 @@ int main() {
         system("xterm -e \"./firealarm\"");
         system("xterm -e \"./manager\"");
     } else {
-        printf("No terminal emulator found. Please run the firealarm program manually.\n");
+        printf("No terminal emulator found. Please run the programs manually.\n");
     }
 };
