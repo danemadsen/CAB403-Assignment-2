@@ -1,7 +1,7 @@
 all: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 
 	gcc -Wall -Wextra -Werror -o  manager manager.c -s
 	gcc -Wall -Wextra -Werror -o simulator simulator.c -s
-	gcc -Wall -Wextra -Werror -o firealarm firealarm.c -s
+	gcc -Wall -Wextra -Werror -Wpedantic -o firealarm firealarm.c -s
 	gcc -Wall -Wextra -Werror -o launcher launcher.c -s
 
 debug: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 

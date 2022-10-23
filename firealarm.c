@@ -91,7 +91,7 @@ void emergency_mode() {
 	}
 	
 	// Show evacuation message on an endless loop
-	while(1) {
+	while(alarm_active) {
 		char *evacmessage = "EVACUATE";
 		for (char *p = evacmessage; *p != '\0'; p++) {
 			for (int i = 0; i < ENTRANCES; i++) {
@@ -102,6 +102,13 @@ void emergency_mode() {
 			}
 			usleep(20000*TIMESCALE);
 		}
+
+		// check if the alarm is still active
+		for (int i = 0; i < LEVELS; i++) {
+			if (Parking->levels[i].alarm == 0) {
+				alarm_active = false;
+			}
+		}
 	}
 }
 
@@ -111,11 +118,7 @@ void *temperature_monitor(void *arg) {
 	uint16_t smoothed_temperatures[SMOOTHED_SAMPLES];
 	uint8_t under_samples = SMOOTHED_SAMPLES*MEDIAN_SAMPLES, hightemps;
 	
-	while(1) {
-		if(alarm_active) {
-			pthread_exit(NULL);
-		}
-		
+	while(!alarm_active) {		
 		// Add temperature to beginning of temperatures array
 		for(int i = MEDIAN_SAMPLES - 1; i > 0; i--) {
 			temperatures[i] = temperatures[i - 1];
@@ -128,16 +131,8 @@ void *temperature_monitor(void *arg) {
 		}
 		smoothed_temperatures[0] = median_temperature(temperatures);
 		
-		if(smoothed_temperatures[0] <= BASE_TEMP + MAX_TEMP_CHANGE) {
-			printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
-		}
-		else if(smoothed_temperatures[0] >= FIRE_THRESHOLD) {
-			printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
-		}
-		else {
-			printf("\033[43mRISING =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
-		}
-		
+		print_temperature(smoothed_temperatures[0]);
+
 		if(!under_samples) {
 			hightemps = 0;
 			for(int i = 0; i < SMOOTHED_SAMPLES; i++) {
@@ -162,6 +157,7 @@ void *temperature_monitor(void *arg) {
 		
 		usleep(2000*TIMESCALE);
 	}
+	return NULL;
 }
 
 uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
@@ -174,4 +170,16 @@ uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
 		return floor(median / MEDIAN_SAMPLES);
 	}
 	else return 0;
+}
+
+void print_temperature(uint16_t temperature) {
+	if(temperature <= BASE_TEMP + MAX_TEMP_CHANGE) {
+			printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", temperature);
+		}
+		else if(temperature >= FIRE_THRESHOLD) {
+			printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", temperature);
+		}
+		else {
+			printf("\033[43mRISING =>\033[0m Temperature: %d\n", temperature);
+		}
 }
