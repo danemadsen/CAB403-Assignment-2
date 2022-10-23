@@ -107,7 +107,7 @@ void emergency_mode() {
 
 void *temperature_monitor(void *arg) {
 	Level_t *level = (Level_t *)arg;
-	uint16_t temperatures[MEDIAN_SAMPLES];
+	volatile uint16_t temperatures[MEDIAN_SAMPLES];
 	uint16_t smoothed_temperatures[SMOOTHED_SAMPLES];
 	uint8_t under_samples = SMOOTHED_SAMPLES*MEDIAN_SAMPLES, hightemps;
 	
@@ -149,7 +149,7 @@ void *temperature_monitor(void *arg) {
 	}
 }
 
-uint16_t median_temperature(uint16_t temperatures[MEDIAN_SAMPLES])
+uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
 {
 	uint16_t median = 0;
 	for(int i = 0; i < MEDIAN_SAMPLES; i++) {

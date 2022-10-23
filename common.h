@@ -45,18 +45,17 @@ Student Email: n10983864@qut.edu.au
 #define EXITS 5             // number of exits from the car park
 #define RATE 0.05           // amount cars are charged per ms
 #define FIRE_CHANCE 5000    // chance of fire occuring per temperature cycle
-#define BASE_TEMP_CHANGE 1  // base temperature change
+#define MAX_TEMP_CHANGE 6   // max temperature change
+#define BASE_TEMP 20        // base temperature
 #define MAX_TEMP 60         // maximum temperature
 #define MEDIAN_SAMPLES 5    // number of samples to take for median
 #define SMOOTHED_SAMPLES 30 // number of samples to take for smoothed
 #define TIMESCALE 1         // timescale of simulation
 // ---------------------------------------------------------------------------
 
-#define SHM_NAME "PARKING"
-#define SIZE 2930
-
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define CLAMP(x, min, max) MIN(MAX(x, min), max)
 
 typedef struct Car Car_t;
 typedef struct LicencePlateRecognition LPR_t;
@@ -66,6 +65,9 @@ typedef struct Entrance Entrance_t;
 typedef struct Exit Exit_t;
 typedef struct Level Level_t;
 typedef struct CarPark CarPark_t;
+
+#define SHM_NAME "PARKING"
+#define SIZE sizeof(CarPark_t) // Default 2930
 
 struct Car{
     char plate[6];

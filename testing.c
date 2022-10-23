@@ -19,10 +19,9 @@ int main(){
     // print the size of pthread_mutex_t
     shm_unlink("PARKING");
     while(1){
-        printf("Some Text\n");
-        printf("Some Text\n");
-        printf("Some Text\n");
-        printf("Some Text\n");
+        signed short x = 0;
+        x--;
+        printf("%d\n", x);
         // usleep for 10ms
         usleep(1000);
         //Clear the console

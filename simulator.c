@@ -334,26 +334,16 @@ void *car_instance(void *arg) {
 };
 
 void *temperature_loop(void *arg) {
-    uint16_t *temperature = (uint16_t *)arg;
-    *temperature = 20;
-    signed short previous_temperature = 20;
-    uint8_t increase_factor = BASE_TEMP_CHANGE, decrease_factor = BASE_TEMP_CHANGE;
+    volatile uint16_t *temperature = (uint16_t *)arg;
+    *temperature = BASE_TEMP;
     uint8_t explosion = 0;
-    uint8_t inferno = 0;
+    uint16_t inferno = 0;
     while (!alarm_active) {
         srand(get_seed());
         // wait 1-5ms
         usleep(((rand() % 5000) + 1000)*TIMESCALE);
         srand(get_seed());
-
-        if(previous_temperature != *temperature) {
-            increase_factor = (previous_temperature < *temperature) ? increase_factor - 1 : increase_factor + 1;
-            decrease_factor = (previous_temperature > *temperature) ? decrease_factor - 1 : decrease_factor + 1;
-        }
-
-        previous_temperature = *temperature;
-        *temperature = MAX(MIN(previous_temperature - decrease_factor + (rand() % (increase_factor + decrease_factor + inferno)), MAX_TEMP), 0);
-
+        
         // There is a 1 in FIRE_CHANCE * LEVELS chance of a fire occuring
         if(rand() % (FIRE_CHANCE * LEVELS) == 403) {
             // When a fire occurs there is a 50/50 chance it is an inferno or an explosion
@@ -361,21 +351,36 @@ void *temperature_loop(void *arg) {
                 explosion = 6; // An explosion gets hot fast but disappears quickly
             }
             else {
-                inferno = 1; // An inferno gets hot slowly but lasts a long time
+                inferno++; // An inferno gets hot slowly but lasts a long time
             }
         }
 
         if(explosion) {
+            printf("\033[41mEXPLOSION=>\033[0m The car park is on fire!\n");
             explosion--;
             if(!explosion) {
-                *temperature = 20;
+                *temperature = BASE_TEMP;
             }
             else {
                 *temperature = MAX_TEMP;
             }
         }
+        else if(inferno) {
+            printf("\033[41mINFERNO  =>\033[0m The car park is on fire!\n");
+            if(inferno % 20 == 0) {
+                *temperature = BASE_TEMP + (inferno / 20);
+            }
+            
+            inferno = (inferno < 800) ? inferno + 1 : 800;
+        }
+        else {
+            *temperature = BASE_TEMP + (rand() % MAX_TEMP_CHANGE / 2 + 1) - (rand() % MAX_TEMP_CHANGE / 2 + 1);
+        }
 
-        if(*temperature > 21){
+        if(*temperature > BASE_TEMP + MAX_TEMP_CHANGE) {
+            printf("\033[41mTEMPERATURE =>\033[0m %d\n", *temperature);
+        }
+        else {
             printf("\033[42mTEMPERATURE =>\033[0m %d\n", *temperature);
         }
     }

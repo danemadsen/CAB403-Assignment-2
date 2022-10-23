@@ -50,5 +50,5 @@ volatile int alarm_active = 0;
 
 void emergency_mode();
 void *temperature_monitor(void *arg);
-uint16_t median_temperature(uint16_t temperatures[MEDIAN_SAMPLES]);
+uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES]);
 void *open_boom_gate(void *arg);
