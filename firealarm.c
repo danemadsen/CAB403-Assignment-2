@@ -39,6 +39,7 @@ and display an evacuation message on the information signs
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <string.h>
@@ -142,7 +143,7 @@ void *temperature_monitor(void *arg) {
 			}
 
 			if (hightemps >= SMOOTHED_SAMPLES* 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) {
-				alarm_active = 1;
+				alarm_active = true;
 				if(hightemps >= SMOOTHED_SAMPLES* 0.9) {
 					printf("\033[45mFIRE DETECTED =>\033[0m Inferno\n");
 				}
@@ -164,22 +165,28 @@ uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
 {
 	uint16_t median = 0;
 	for(int i = 0; i < MEDIAN_SAMPLES; i++) {
+		assert(temperatures[i] >= BASE_TEMP - MAX_TEMP_CHANGE && temperatures[i] <= MAX_TEMP);
 		median += temperatures[i];
 	}
 	if(median > 0) {
 		return floor(median / MEDIAN_SAMPLES);
 	}
-	else return 0;
+	else{
+		assert(median == 0);
+		return 0;
+	}
 }
 
 void print_temperature(uint16_t temperature) {
 	if(temperature <= BASE_TEMP + MAX_TEMP_CHANGE) {
-			printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", temperature);
-		}
-		else if(temperature >= FIRE_THRESHOLD) {
-			printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", temperature);
-		}
-		else {
-			printf("\033[43mRISING =>\033[0m Temperature: %d\n", temperature);
-		}
+		printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", temperature);
+	}
+	else if(temperature >= FIRE_THRESHOLD) {
+		printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", temperature);
+	}
+	else {
+		assert(temperature > BASE_TEMP + MAX_TEMP_CHANGE);
+		assert(temperature < FIRE_THRESHOLD);
+		printf("\033[43mRISING =>\033[0m Temperature: %d\n", temperature);
+	}
 }
