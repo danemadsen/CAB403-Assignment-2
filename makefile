@@ -1,12 +1,14 @@
-all: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h common.h 
+all: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 
 	gcc -o manager manager.c -s
 	gcc -o simulator simulator.c -s
 	gcc -o firealarm firealarm.c -s
+	gcc -o launcher launcher.c -s
 
-debug: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h common.h 
+debug: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 
 	gcc -o manager manager.c -g
 	gcc -o simulator simulator.c -g
 	gcc -o firealarm firealarm.c -g
+	gcc -o launcher launcher.c -g
 
 manager: manager.c manager.h common.h
 	gcc -o manager manager.c

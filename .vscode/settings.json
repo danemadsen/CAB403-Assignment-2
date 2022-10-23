@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "unistd.h": "c",
-        "compare": "c",
-        "concepts": "c",
-        "typeinfo": "c"
-    },
-}
