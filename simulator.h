@@ -97,11 +97,9 @@ int nums[MAX(ENTRANCES, EXITS)];
 
 Car_t ParkedCars[LEVELS*LEVEL_CAPACITY];
 
-//Car_t entrance_queue[ENTRANCES][LEVEL_CAPACITY];
 pthread_mutex_t entrance_lock[ENTRANCES];
 pthread_cond_t entrance_condition[ENTRANCES];
 
-//Car_t exit_queue[EXITS][LEVEL_CAPACITY];
 pthread_mutex_t exit_lock[EXITS];
 pthread_cond_t exit_condition[EXITS];
 
@@ -109,37 +107,23 @@ pthread_mutexattr_t shared_mutex_attr;
 pthread_condattr_t shared_cond_attr;
 
 int incremental_seed;
-pthread_mutex_t seed_lock;
 int get_seed();
 bool alarm_active = false;
 
-pthread_t generator_thread;
 pthread_t temperature_loop_thread;
-pthread_t boom_gate_loop_thread;
 pthread_t car_thread;
-
-Car_t get_departing();
-//void add_car(Car_t Auto);
-//Car_t move_queue(Car_t Queue[LEVEL_CAPACITY], pthread_mutex_t *lock);
-//void enter_car(int entry);
-//void exit_car(int ext);
 
 void generate_plate(char *plate);
 void get_random_plate_from_file(char* plate);
-bool check_plate(char *plate);
 void get_random_plate(char* plate);
 void send_plate(char plate[6], LPR_t *lpr);
 
 char get_display(Sign_t *sign);
 
 void open_boom_gate(BoomGate_t *boom_gate);
-void *close_boom_gate_loop(void *arg);
+void close_boom_gate(BoomGate_t *boom_gate);
 
 int get_seed();
-//void send_to_random_entrance(Car_t Auto);
-//void send_to_random_exit(Car_t Auto);
-
-//void set_random_temperature(int lvl);
 
 void car_generator_loop();
 void *car_instance(void *arg);

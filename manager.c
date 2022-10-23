@@ -228,16 +228,6 @@ char get_level() {
   }
 };
 
-void force_open_boom_gate(BoomGate_t *boom_gate){
-  pthread_mutex_lock(&boom_gate->mlock);
-  while (boom_gate->status != 'O') {
-    boom_gate->status = 'R';
-    pthread_cond_wait(&boom_gate->condition, &boom_gate->mlock);
-  }
-  pthread_mutex_unlock(&boom_gate->mlock);
-  pthread_cond_broadcast(&boom_gate->condition);
-};
-
 void raise_boom_gate(BoomGate_t *boom_gate) {
   pthread_mutex_lock(&boom_gate->mlock);
   while (boom_gate->status != 'C') {

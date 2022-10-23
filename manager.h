@@ -84,11 +84,22 @@ pthread_t entrance_threads[ENTRANCES];
 pthread_t level_threads[LEVELS];
 pthread_t exit_threads[EXITS];
 
-void set_sign(Sign_t *sign, char signal);
+void charge_car(Car_t *Auto);
+void add_car(Car_t Auto);
+void remove_car(Car_t Auto);
+Car_t get_car(Car_t Auto);
 bool check_plate(char *plate);
 bool check_unique(char *plate);
 bool check_space();
+bool check_alarm();
 char get_level();
+void raise_boom_gate(BoomGate_t *boom_gate);
+void lower_boom_gate(BoomGate_t *boom_gate);
+char get_boom_gate_status(BoomGate_t *boom_gate);
+void set_sign(Sign_t *sign, char signal);
+int get_level_index(Level_t *lvl);
+int get_level_count(int level);
+int get_total_count();
 
 void *entrance_loop(void *arg);
 void *level_loop(void *arg);

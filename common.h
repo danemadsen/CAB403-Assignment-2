@@ -37,7 +37,6 @@ Student Email: n10983864@qut.edu.au
 #include <unistd.h>
 #include <fcntl.h>
 
-
 // -------------------------------- Settings --------------------------------
 #define LEVELS 5            // number of levels in the car park
 #define LEVEL_CAPACITY 20   // number of spaces on each level

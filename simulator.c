@@ -187,25 +187,6 @@ void get_random_plate_from_file(char *plate) {
     fclose(file);
 };
 
-bool check_plate(char *plate) {
-    FILE* file = fopen("plates.txt", "r");
-    char c;
-    char *file_plate = malloc(7);
-    while ((c = fgetc(file)) != EOF) {
-        fseek(file, -1, SEEK_CUR);
-        fgets(file_plate, 7, file);
-        if (strcmp(plate, file_plate) == 0) {
-            free(file_plate);
-            fclose(file);
-            return true;
-        }
-        memset(file_plate, 0, 7);
-    }
-    free(file_plate);
-    fclose(file);
-    return false;
-};
-
 void get_random_plate(char *plate) {
     srand(get_seed());
     if (rand() % 2 == 0) {
