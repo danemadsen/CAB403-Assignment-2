@@ -51,10 +51,11 @@ int main()
 {
 	// wait until a shared memory segment named PARKING is created
 	if((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
-    printf("Shared memory segment doesnt exist\n");
-    return(1);
+		printf("Shared memory segment doesnt exist\n");
+    	return(1);
   	}
 	Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	assert(Parking != NULL);
 
 	for (int i = 0; i < LEVELS; i++) {
 		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
@@ -63,6 +64,7 @@ int main()
 	while(!alarm_active) {
 		usleep(1000*TIMESCALE);
 	}
+	assert(alarm_active);
 	emergency_mode();
 	for (int i = 0; i < LEVELS; i++) {
 		pthread_join(level_threads[i], NULL);
@@ -71,7 +73,8 @@ int main()
 }
 
 void emergency_mode() {
-	fprintf(stderr, "*** ALARM ACTIVE ***\n");
+	printf("*** ALARM ACTIVE ***\n");
+	assert(alarm_active);
 	
 	// Handle the alarm system and open boom gates
 	// Activate alarms on all levels
@@ -111,6 +114,7 @@ void emergency_mode() {
 			}
 		}
 	}
+	assert(alarm_active == false);
 }
 
 void *temperature_monitor(void *arg) {
@@ -131,10 +135,11 @@ void *temperature_monitor(void *arg) {
 			smoothed_temperatures[i] = smoothed_temperatures[i - 1];
 		}
 		smoothed_temperatures[0] = median_temperature(temperatures);
-		
+
 		print_temperature(smoothed_temperatures[0]);
 
 		if(!under_samples) {
+			assert(under_samples == 0);
 			hightemps = 0;
 			for(int i = 0; i < SMOOTHED_SAMPLES; i++) {
 				if (smoothed_temperatures[i] >= FIRE_THRESHOLD) {
@@ -153,6 +158,7 @@ void *temperature_monitor(void *arg) {
 			}
 		} 
 		else {
+			assert(under_samples != 0);
 			under_samples--;
 		}
 		
