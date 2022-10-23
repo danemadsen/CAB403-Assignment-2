@@ -165,7 +165,7 @@ uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
 {
 	uint16_t median = 0;
 	for(int i = 0; i < MEDIAN_SAMPLES; i++) {
-		assert(temperatures[i] >= BASE_TEMP - MAX_TEMP_CHANGE && temperatures[i] <= MAX_TEMP);
+		assert(temperatures[i] <= MAX_TEMP);
 		median += temperatures[i];
 	}
 	if(median > 0) {
