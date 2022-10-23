@@ -127,18 +127,33 @@ void *temperature_monitor(void *arg) {
 			smoothed_temperatures[i] = smoothed_temperatures[i - 1];
 		}
 		smoothed_temperatures[0] = median_temperature(temperatures);
-		printf("Temp: %d\n", smoothed_temperatures[0]);
+		
+		if(smoothed_temperatures[0] <= BASE_TEMP + MAX_TEMP_CHANGE) {
+			printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
+		}
+		else if(smoothed_temperatures[0] >= FIRE_THRESHOLD) {
+			printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
+		}
+		else {
+			printf("\033[43mRISING =>\033[0m Temperature: %d\n", smoothed_temperatures[0]);
+		}
+		
 		if(!under_samples) {
 			hightemps = 0;
 			for(int i = 0; i < SMOOTHED_SAMPLES; i++) {
-				if (smoothed_temperatures[i] >= 58) {
+				if (smoothed_temperatures[i] >= FIRE_THRESHOLD) {
 					hightemps++;
 				}
 			}
 
 			if (hightemps >= SMOOTHED_SAMPLES* 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) {
 				alarm_active = 1;
-				printf("High Temps: %d\nSmoothed Temp1: %d\nSmoothed Temp2: %d\n", hightemps, smoothed_temperatures[0], smoothed_temperatures[SMOOTHED_SAMPLES - 1]);
+				if(hightemps >= SMOOTHED_SAMPLES* 0.9) {
+					printf("\033[45mFIRE DETECTED =>\033[0m Inferno\n");
+				}
+				else {
+					printf("\033[45mFIRE DETECTED =>\033[0m Explosion\n");
+				}
 			}
 		} 
 		else {

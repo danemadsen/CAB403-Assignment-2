@@ -44,6 +44,7 @@ Student Email: n10983864@qut.edu.au
 #define EXITS 5             // number of exits from the car park
 #define RATE 0.05           // amount cars are charged per ms
 #define FIRE_CHANCE 5000    // chance of fire occuring per temperature cycle
+#define FIRE_THRESHOLD 58   // temperature at which a fire is detected
 #define MAX_TEMP_CHANGE 6   // max temperature change
 #define BASE_TEMP 20        // base temperature
 #define MAX_TEMP 60         // maximum temperature

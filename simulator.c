@@ -337,7 +337,6 @@ void *temperature_loop(void *arg) {
         }
 
         if(explosion) {
-            printf("\033[41mEXPLOSION=>\033[0m The car park is on fire!\n");
             explosion--;
             if(!explosion) {
                 *temperature = BASE_TEMP;
@@ -347,7 +346,6 @@ void *temperature_loop(void *arg) {
             }
         }
         else if(inferno) {
-            printf("\033[41mINFERNO  =>\033[0m The car park is on fire!\n");
             if(inferno % 20 == 0) {
                 *temperature = BASE_TEMP + (inferno / 20);
             }
@@ -356,13 +354,6 @@ void *temperature_loop(void *arg) {
         }
         else {
             *temperature = BASE_TEMP + (rand() % MAX_TEMP_CHANGE / 2 + 1) - (rand() % MAX_TEMP_CHANGE / 2 + 1);
-        }
-
-        if(*temperature > BASE_TEMP + MAX_TEMP_CHANGE) {
-            printf("\033[41mTEMPERATURE =>\033[0m %d\n", *temperature);
-        }
-        else {
-            printf("\033[42mTEMPERATURE =>\033[0m %d\n", *temperature);
         }
     }
     pthread_exit(NULL);
