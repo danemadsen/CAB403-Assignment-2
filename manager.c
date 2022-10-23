@@ -82,9 +82,10 @@ int main() {
   
   revenue = 0;
 
-  //Initialise the mutexes and conditions
+  //Initialise the mutexes
   pthread_mutex_init(&parked_cars_mlock, NULL);
-  pthread_cond_init(&parked_cars_condition, NULL);
+  pthread_mutex_init(&arriving_cars_mlock, NULL);
+  pthread_mutex_init(&departing_cars_mlock, NULL);
   pthread_mutex_init(&revenue_lock, NULL);
 
   // Initialise the threads
@@ -118,7 +119,7 @@ void charge_car(Car_t *Auto) {
   pthread_mutex_unlock(&revenue_lock);
 };
 
-void add_car(Car_t Auto){
+void add_parked_car(Car_t Auto){
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVEL_CAPACITY; i++) {
     if (parked_cars[Auto.level][i].plate[0] == 0) {
@@ -126,37 +127,61 @@ void add_car(Car_t Auto){
       break;
     }
   }
-  pthread_cond_signal(&parked_cars_condition);
   pthread_mutex_unlock(&parked_cars_mlock);
 };
 
-void remove_car(Car_t Auto) {
+void add_arriving_car(Car_t Auto){
+  pthread_mutex_lock(&arriving_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (arriving_cars[i].plate[0] == 0) {
+      arriving_cars[i] = Auto;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&arriving_cars_mlock);
+};
+
+void add_departing_car(Car_t Auto){
+  pthread_mutex_lock(&departing_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (departing_cars[i].plate[0] == 0) {
+      departing_cars[i] = Auto;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&departing_cars_mlock);
+};
+
+void get_car(Car_t *Auto) {
+  pthread_mutex_lock(&arriving_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (strcmp(arriving_cars[i].plate, (char*) &Auto->plate[0]) == 0) {
+      *Auto = arriving_cars[i];
+      arriving_cars[i] = (Car_t) {0};
+      pthread_mutex_unlock(&arriving_cars_mlock);
+    }
+  }
+  pthread_mutex_unlock(&arriving_cars_mlock);
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (strcmp(parked_cars[i][j].plate, Auto.plate) == 0) {
+      if (strcmp(parked_cars[i][j].plate, (char*) &Auto->plate[0]) == 0) {
+        *Auto = parked_cars[i][j];
         parked_cars[i][j] = (Car_t) {0};
-        break;
-      }
-    }
-  }
-  pthread_cond_signal(&parked_cars_condition);
-  pthread_mutex_unlock(&parked_cars_mlock);
-};
-
-Car_t get_car(Car_t Auto) {
-  pthread_mutex_lock(&parked_cars_mlock);
-  for (int i = 0; i < LEVELS; i++) {
-    for (int j = 0; j < LEVEL_CAPACITY; j++) {
-      if (strcmp(parked_cars[i][j].plate, Auto.plate) == 0) {
-        Auto = parked_cars[i][j];
         pthread_mutex_unlock(&parked_cars_mlock);
-        return Auto;
       }
     }
   }
   pthread_mutex_unlock(&parked_cars_mlock);
-  return (Car_t) {0};
+  pthread_mutex_lock(&departing_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (strcmp(departing_cars[i].plate, (char*) &Auto->plate[0]) == 0) {
+      *Auto = departing_cars[i];
+      departing_cars[i] = (Car_t) {0};
+      pthread_mutex_unlock(&departing_cars_mlock);
+    }
+  }
+  pthread_mutex_unlock(&departing_cars_mlock);
 };
 
 bool check_plate(char* plate) {
@@ -179,6 +204,14 @@ bool check_plate(char* plate) {
 };
 
 bool check_unique(char* plate) {
+  pthread_mutex_lock(&arriving_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (strcmp(arriving_cars[i].plate, plate) == 0) {
+      pthread_mutex_unlock(&arriving_cars_mlock);
+      return false;
+    }
+  }
+  pthread_mutex_unlock(&arriving_cars_mlock);
   pthread_mutex_lock(&parked_cars_mlock);
   for (int i = 0; i < LEVELS; i++) {
     for (int j = 0; j < LEVEL_CAPACITY; j++) {
@@ -189,6 +222,14 @@ bool check_unique(char* plate) {
     }
   }
   pthread_mutex_unlock(&parked_cars_mlock);
+  pthread_mutex_lock(&departing_cars_mlock);
+  for (int i = 0; i < LEVELS* LEVEL_CAPACITY; i++) {
+    if (strcmp(departing_cars[i].plate, plate) == 0) {
+      pthread_mutex_unlock(&departing_cars_mlock);
+      return false;
+    }
+  }
+  pthread_mutex_unlock(&departing_cars_mlock);
   return true;
 };
 
@@ -319,8 +360,8 @@ void *entrance_loop(void *arg) {
         Auto.plate[i] = plate[i];
       }
       Auto.arrival_time = clock();
-      Auto.level = lvl;
-      add_car(Auto);
+      Auto.level = 254;
+      add_arriving_car(Auto);
     }
     else{
       if (!check_space()) set_sign(&entrance->information_sign, 21); // Converts to char 'F'
@@ -339,10 +380,14 @@ void *level_loop(void *arg) {
     strcpy(Auto.plate, level->LPR.plate);
     *level->LPR.plate = '\0';
     pthread_mutex_unlock(&level->LPR.mlock);
-    Auto = get_car(Auto);
-    Auto.level = (char) get_level_index(level);
-    remove_car(Auto);
-    add_car(Auto);
+    get_car(&Auto);
+    if(Auto.level != get_level_index(level)) {
+      Auto.level = (char) get_level_index(level);
+      add_parked_car(Auto);
+    }
+    else {
+      add_departing_car(Auto);
+    }
   }
   pthread_exit(NULL);
 };
@@ -355,8 +400,7 @@ void *exit_loop(void *arg) {
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);
     pthread_mutex_unlock(&exit->LPR.mlock);
-    Auto = get_car(Auto);
-    remove_car(Auto);
+    get_car(&Auto);
     charge_car(&Auto);
     raise_boom_gate(&exit->boom_gate);
     // wait 20ms
@@ -369,8 +413,7 @@ void *exit_loop(void *arg) {
     pthread_cond_wait(&exit->LPR.condition, &exit->LPR.mlock);
     strcpy(Auto.plate, exit->LPR.plate);
     pthread_mutex_unlock(&exit->LPR.mlock);
-    Auto = get_car(Auto);
-    remove_car(Auto);
+    get_car(&Auto);
   }
   pthread_exit(NULL);
 };

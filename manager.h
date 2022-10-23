@@ -75,9 +75,12 @@ volatile double revenue;
 bool alarm_active = false;
 
 Car_t parked_cars[LEVELS][LEVEL_CAPACITY];
+Car_t arriving_cars[LEVELS*LEVEL_CAPACITY];
+Car_t departing_cars[LEVELS*LEVEL_CAPACITY];
 int parked_cars_count[LEVELS];
 pthread_mutex_t parked_cars_mlock;
-pthread_cond_t parked_cars_condition;
+pthread_mutex_t arriving_cars_mlock;
+pthread_mutex_t departing_cars_mlock;
 pthread_mutex_t revenue_lock;
 
 pthread_t entrance_threads[ENTRANCES];
@@ -85,9 +88,10 @@ pthread_t level_threads[LEVELS];
 pthread_t exit_threads[EXITS];
 
 void charge_car(Car_t *Auto);
-void add_car(Car_t Auto);
-void remove_car(Car_t Auto);
-Car_t get_car(Car_t Auto);
+void add_parked_car(Car_t Auto);
+void add_arriving_car(Car_t Auto);
+void add_departing_car(Car_t Auto);
+void get_car(Car_t *Auto);
 bool check_plate(char *plate);
 bool check_unique(char *plate);
 bool check_space();

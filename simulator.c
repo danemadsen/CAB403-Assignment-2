@@ -296,6 +296,8 @@ void *car_instance(void *arg) {
 
     while((clock() - Auto.arrival_time) < departure_time && !alarm_active);
 
+    send_plate(Auto.plate, &Parking->levels[Auto.level].LPR);
+
     srand(get_seed());
     int random_exit = rand() % EXITS;
     pthread_mutex_lock(&exit_lock[random_exit]);
