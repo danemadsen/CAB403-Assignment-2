@@ -93,6 +93,8 @@ the level LPR for the second time).
 #include <stdbool.h>
 #include "common.h"
 
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 int nums[MAX(ENTRANCES, EXITS)];
 
 Car_t ParkedCars[LEVELS*LEVEL_CAPACITY];

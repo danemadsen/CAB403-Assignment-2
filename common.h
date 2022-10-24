@@ -38,24 +38,20 @@ Student Email: n10983864@qut.edu.au
 #include <fcntl.h>
 
 // -------------------------------- Settings --------------------------------
-#define LEVELS 5            // number of levels in the car park
-#define LEVEL_CAPACITY 20   // number of spaces on each level
-#define ENTRANCES 5         // number of entrances to the car park
-#define EXITS 5             // number of exits from the car park
-#define RATE 0.05           // amount cars are charged per ms
-#define FIRE_CHANCE 5000    // chance of fire occuring per temperature cycle
-#define FIRE_THRESHOLD 58   // temperature at which a fire is detected
-#define MAX_TEMP_CHANGE 6   // max temperature change
-#define BASE_TEMP 20        // base temperature
-#define MAX_TEMP 60         // maximum temperature
-#define MEDIAN_SAMPLES 5    // number of samples to take for median
-#define SMOOTHED_SAMPLES 30 // number of samples to take for smoothed
-#define TIMESCALE 1         // timescale of simulation
+#define LEVELS              5       // number of levels in the car park
+#define LEVEL_CAPACITY      20      // number of spaces on each level
+#define ENTRANCES           5       // number of entrances to the car park
+#define EXITS               5       // number of exits from the car park
+#define RATE                0.05    // amount cars are charged per ms
+#define FIRE_CHANCE         5000    // chance of fire occuring per temperature cycle
+#define FIRE_THRESHOLD      58      // temperature at which a fire is detected
+#define MAX_TEMP_CHANGE     6       // max temperature change
+#define BASE_TEMP           20      // base temperature
+#define MAX_TEMP            60      // maximum temperature
+#define MEDIAN_SAMPLES      5       // number of samples to take for median
+#define SMOOTHED_SAMPLES    30      // number of samples to take for smoothed
+#define TIMESCALE           1       // timescale of simulation
 // ---------------------------------------------------------------------------
-
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define CLAMP(x, min, max) MIN(MAX(x, min), max)
 
 typedef struct Car Car_t;
 typedef struct LicencePlateRecognition LPR_t;
