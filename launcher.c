@@ -6,6 +6,10 @@ int main() {
         system("gnome-terminal -e \"./simulator\"");
         system("gnome-terminal -e \"./firealarm\"");
         system("gnome-terminal -e \"./manager\"");
+    } else if (system("which xfce4-terminal") == 0) {
+        system("xfce4-terminal -e \"./simulator\"");
+        system("xfce4-terminal -e \"./firealarm\"");
+        system("xfce4-terminal -e \"./manager\"");
     } else if (system("which konsole") == 0) {
         system("konsole -e \"./simulator\"");
         system("konsole -e \"./firealarm\"");
