@@ -32,16 +32,10 @@ The roles of the fire alarm system:
 and display an evacuation message on the information signs
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdbool.h>
-#include <string.h>
+#pragma once
+#include <stdint.h>
+#include <assert.h>
+#include <math.h>
 #include "common.h"
 
 pthread_t level_threads[LEVELS];

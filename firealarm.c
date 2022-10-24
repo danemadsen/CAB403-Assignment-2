@@ -32,20 +32,7 @@ The roles of the fire alarm system:
 and display an evacuation message on the information signs
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
 #include "firealarm.h"
-#include "common.h"
 
 int main()
 {
@@ -64,6 +51,7 @@ int main()
 	pthread_cond_init(&alarm_cond, NULL);
 	
 	for (int i = 0; i < LEVELS; i++) {
+		Parking->levels[i].alarm = 0;
 		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
 	}
 	
@@ -100,7 +88,7 @@ void emergency_mode() {
 		// check if the alarm is still active
 		check_alarm();
 	}
-	assert(alarm_active == false);
+	assert(alarm_active == 0);
 }
 
 void check_alarm() {
@@ -196,7 +184,6 @@ uint8_t check_fire(uint16_t smoothed_temperatures[SMOOTHED_SAMPLES]) {
 	if (hightemps >= SMOOTHED_SAMPLES * 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) {
 		if(hightemps >= SMOOTHED_SAMPLES * 0.9) return 1;
 		else return 2;
-		return true;
 	}
 	else {
 		assert(hightemps < SMOOTHED_SAMPLES * 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] < 8);

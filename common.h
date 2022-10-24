@@ -28,12 +28,9 @@ Student Email: n10983864@qut.edu.au
 
 #pragma once
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <time.h>
 #include <pthread.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
 

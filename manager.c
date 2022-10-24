@@ -58,19 +58,7 @@ close, it will have to wait for the boom gate to fully close, then fully open ag
 for more information.)
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdbool.h>
-#include <string.h>
 #include "manager.h"
-#include "common.h"
 
 int main() {
   // wait until a shared memory segment named PARKING is created

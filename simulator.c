@@ -80,19 +80,7 @@ the level LPR for the second time).
 ● Every 1-5ms, the temperature on each level will change to a random value.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <fcntl.h>
 #include "simulator.h"
-#include "common.h"
 
 int main(){
     // Ensure no shared memory segemnt already exists
