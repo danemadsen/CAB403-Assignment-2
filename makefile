@@ -11,10 +11,13 @@ debug: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launc
 	gcc -lrt -pthread -o launcher launcher.c -g
 
 manager: manager.c manager.h common.h
-	gcc -o manager manager.c
+	gcc -Wall -Wextra -Werror -lrt -pthread -o  manager manager.c -s
 
 simulator: simulator.c simulator.h common.h
-	gcc -o simulator simulator.c
+	gcc -Wall -Wextra -Werror -lrt -pthread -o simulator simulator.c -s
 
-testing: testing.c
-	gcc -o testing testing.c
+firealarm: firealarm.c firealarm.h common.h
+	gcc -Wall -Wextra -Werror -lrt -pthread -Wpedantic -o firealarm firealarm.c -s
+
+launcher: launcher.c
+	gcc -Wall -Wextra -Werror -lrt -pthread -o launcher launcher.c -s
