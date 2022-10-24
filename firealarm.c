@@ -57,12 +57,18 @@ int main()
 	Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 	assert(Parking != NULL);
 
+	//initialise mutex and condition variables
+	pthread_mutex_init(&alarm_lock, NULL);
+	pthread_cond_init(&alarm_cond, NULL);
+	
 	for (int i = 0; i < LEVELS; i++) {
 		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
 	}
 	
 	while(!alarm_active) {
-		usleep(1000*TIMESCALE);
+		pthread_mutex_lock(&alarm_lock);
+		pthread_cond_wait(&alarm_cond, &alarm_lock);
+		pthread_mutex_unlock(&alarm_lock);
 	}
 	assert(alarm_active);
 	emergency_mode();
@@ -110,7 +116,10 @@ void emergency_mode() {
 		// check if the alarm is still active
 		for (int i = 0; i < LEVELS; i++) {
 			if (Parking->levels[i].alarm == 0) {
+				pthread_mutex_lock(&alarm_lock);
 				alarm_active = false;
+				pthread_cond_broadcast(&alarm_cond);
+				pthread_mutex_unlock(&alarm_lock);
 			}
 		}
 	}
@@ -148,7 +157,10 @@ void *temperature_monitor(void *arg) {
 			}
 
 			if (hightemps >= SMOOTHED_SAMPLES* 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) {
+				pthread_mutex_lock(&alarm_lock);
 				alarm_active = true;
+				pthread_cond_broadcast(&alarm_cond);
+				pthread_mutex_unlock(&alarm_lock);
 				if(hightemps >= SMOOTHED_SAMPLES* 0.9) {
 					printf("\033[45mFIRE DETECTED =>\033[0m Inferno\n");
 				}

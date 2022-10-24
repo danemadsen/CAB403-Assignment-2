@@ -47,6 +47,8 @@ and display an evacuation message on the information signs
 pthread_t level_threads[LEVELS];
 
 bool alarm_active = false;
+pthread_mutex_t alarm_lock;
+pthread_cond_t alarm_cond;
 
 void emergency_mode();
 void *temperature_monitor(void *arg);
