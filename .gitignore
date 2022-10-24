@@ -4,5 +4,7 @@ billing.txt
 manager
 simulator
 firealarm
+firealarm.c.ctu-info
+firealarm.c.dump
 launcher
 testing
