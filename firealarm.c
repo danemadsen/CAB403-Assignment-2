@@ -36,18 +36,19 @@ and display an evacuation message on the information signs
 
 int main(void)
 {
-	shm_fd = shm_open(SHM_NAME, O_RDWR, SHM_MODE);
+	int shm_fd = shm_open(SHM_NAME, O_RDWR, SHM_MODE);
 	// if shm_open fails, exit
 	if(shm_fd != -1) {
 		Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 		assert(Parking != NULL);
 
-		alarm_active = 0;
+		alarm_active = false;
 
 		//initialise mutex and condition variables
 		pthread_mutex_init(&alarm_lock, NULL);
 		pthread_cond_init(&alarm_cond, NULL);
 
+		pthread_t level_threads[LEVELS];
 		for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
 			Parking->levels[i].alarm = 0;
 			pthread_create(&level_threads[i], NULL, temperature_monitor, (void *) (uintptr_t) i);
@@ -84,7 +85,7 @@ void emergency_mode(void) {
 	open_all_boom_gates();
 	
 	// Show evacuation message while alarm is active
-	while(alarm_active != 0) {
+	while(alarm_active) {
 		// Display evacuation message on information signs
 		evacuation_message();
 
@@ -99,10 +100,10 @@ void check_alarm(void) {
 	for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
 		if (Parking->levels[i].alarm == (uint8_t) 0) {
 			pthread_mutex_lock(&alarm_lock);
-			alarm_active = 0;
+			alarm_active = false;
 			pthread_cond_broadcast(&alarm_cond);
 			pthread_mutex_unlock(&alarm_lock);
-			assert(alarm_active == (uint8_t) 0);
+			assert(!alarm_active);
 			
 		}
 	}
@@ -165,7 +166,7 @@ void *temperature_monitor(void *arg) {
 		if(!under_samples) {
 			assert(under_samples == (uint8_t) 0);
 			pthread_mutex_lock(&alarm_lock);
-			assert(alarm_active == (uint8_t) 0);
+			assert(!alarm_active);
 			alarm_active = check_fire(smoothed_temperatures);
 			pthread_cond_broadcast(&alarm_cond);
 			pthread_mutex_unlock(&alarm_lock);
@@ -182,7 +183,7 @@ void *temperature_monitor(void *arg) {
 
 uint8_t check_fire(uint16_t smoothed_temperatures[SMOOTHED_SAMPLES]) {
 	uint8_t hightemps = 0;
-	uint8_t return_val = 0;
+	bool return_val = false;
 	for(uint8_t i = 0; i < (uint8_t) SMOOTHED_SAMPLES; i++) {
 		if (smoothed_temperatures[i] >= (uint16_t) FIRE_THRESHOLD) {
 			hightemps++;
@@ -193,15 +194,7 @@ uint8_t check_fire(uint16_t smoothed_temperatures[SMOOTHED_SAMPLES]) {
 	}
 
 	if (hightemps >= (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) >= (uint16_t) 8) {
-		if(hightemps >= (uint8_t) (SMOOTHED_SAMPLES * 0.9)) {
-			return_val = (uint8_t) 1;
-		}
-		else if((smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) >= (uint16_t) 8) {
-			return_val = (uint8_t) 2;
-		}
-		else {
-			assert(hightemps < (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) < (uint16_t) 8);
-		}
+		return_val = true;
 	}
 	else {
 		assert(hightemps < (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) < (uint16_t) 8);

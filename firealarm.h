@@ -38,11 +38,9 @@ and display an evacuation message on the information signs
 #include <math.h>
 #include "common.h"
 
-pthread_t level_threads[LEVELS];
-
-uint8_t alarm_active;
-pthread_mutex_t alarm_lock;
-pthread_cond_t alarm_cond;
+static bool alarm_active;
+static pthread_mutex_t alarm_lock;
+static pthread_cond_t alarm_cond;
 
 void emergency_mode(void);
 void check_alarm(void);

@@ -84,7 +84,6 @@ the level LPR for the second time).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include "common.h"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))

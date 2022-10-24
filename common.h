@@ -28,6 +28,7 @@ Student Email: n10983864@qut.edu.au
 
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -113,5 +114,4 @@ struct CarPark{
     struct Exit exits[EXITS];
 };
 
-int shm_fd = -1;
-CarPark_t* Parking;
+static CarPark_t* Parking;
