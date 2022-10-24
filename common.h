@@ -27,7 +27,6 @@ Student Email: n10983864@qut.edu.au
 */
 
 #pragma once
-#include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <sys/mman.h>
@@ -61,6 +60,7 @@ typedef struct CarPark CarPark_t;
 
 #define SHM_NAME "PARKING"
 #define SHM_SIZE sizeof(CarPark_t) // Default 2930
+#define SHM_MODE 438
 
 struct Car{
     char plate[6];

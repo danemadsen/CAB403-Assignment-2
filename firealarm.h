@@ -44,11 +44,10 @@ uint8_t alarm_active;
 pthread_mutex_t alarm_lock;
 pthread_cond_t alarm_cond;
 
-void emergency_mode();
-void check_alarm();
-void evacuation_message();
-void open_all_boom_gates();
+void emergency_mode(void);
+void check_alarm(void);
+void evacuation_message(void);
+void open_all_boom_gates(void);
 void *temperature_monitor(void *arg);
 uint8_t check_fire(uint16_t smoothed_temperatures[SMOOTHED_SAMPLES]);
 uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES]);
-void print_temperature(uint16_t temperature);

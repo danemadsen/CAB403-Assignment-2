@@ -34,54 +34,57 @@ and display an evacuation message on the information signs
 
 #include "firealarm.h"
 
-int main()
+int main(void)
 {
-	// wait until a shared memory segment named PARKING is created
-	if((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
-		printf("Shared memory segment doesnt exist\n");
-    	return(1);
+	shm_fd = shm_open(SHM_NAME, O_RDWR, SHM_MODE);
+	// if shm_open fails, exit
+	if(shm_fd != -1) {
+		Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+		assert(Parking != NULL);
+
+		alarm_active = 0;
+
+		//initialise mutex and condition variables
+		pthread_mutex_init(&alarm_lock, NULL);
+		pthread_cond_init(&alarm_cond, NULL);
+
+		for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
+			Parking->levels[i].alarm = 0;
+			pthread_create(&level_threads[i], NULL, temperature_monitor, (void *) (uintptr_t) i);
+		}
+
+		while(!alarm_active) {
+			pthread_mutex_lock(&alarm_lock);
+			pthread_cond_wait(&alarm_cond, &alarm_lock);
+			pthread_mutex_unlock(&alarm_lock);
+		}
+		assert(alarm_active);
+		emergency_mode();
+		for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
+			pthread_join(level_threads[i], NULL);
+		}
+		pthread_mutex_destroy(&alarm_lock);
+		pthread_cond_destroy(&alarm_cond);
   	}
-	Parking = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-	assert(Parking != NULL);
-
-	alarm_active = 0;
-
-	//initialise mutex and condition variables
-	pthread_mutex_init(&alarm_lock, NULL);
-	pthread_cond_init(&alarm_cond, NULL);
-	
-	for (uint8_t i = 0; i < LEVELS; i++) {
-		Parking->levels[i].alarm = 0;
-		pthread_create(&level_threads[i], NULL, temperature_monitor, &Parking->levels[i]);
-	}
-	
-	while(!alarm_active) {
-		pthread_mutex_lock(&alarm_lock);
-		pthread_cond_wait(&alarm_cond, &alarm_lock);
-		pthread_mutex_unlock(&alarm_lock);
-	}
-	assert(alarm_active);
-	emergency_mode();
-	for (uint8_t i = 0; i < LEVELS; i++) {
-		pthread_join(level_threads[i], NULL);
+	else {
+		assert(shm_fd != -1);
 	}
 	return 0;
 }
 
-void emergency_mode() {
-	printf("*** ALARM ACTIVE ***\n");
+void emergency_mode(void) {
 	assert(alarm_active);
 	
 	// Handle the alarm system and open boom gates
 	// Activate alarms on all levels
-	for (uint8_t i = 0; i < LEVELS; i++) {
+	for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
 		Parking->levels[i].alarm = 1;
 	}
 	// Open all boom gates
 	open_all_boom_gates();
 	
 	// Show evacuation message while alarm is active
-	while(alarm_active) {
+	while(alarm_active != 0) {
 		// Display evacuation message on information signs
 		evacuation_message();
 
@@ -91,86 +94,87 @@ void emergency_mode() {
 	assert(!alarm_active);
 }
 
-void check_alarm() {
+void check_alarm(void) {
 	assert(alarm_active);
-	for (uint8_t i = 0; i < LEVELS; i++) {
-		if (Parking->levels[i].alarm == 0) {
+	for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
+		if (Parking->levels[i].alarm == (uint8_t) 0) {
 			pthread_mutex_lock(&alarm_lock);
 			alarm_active = 0;
 			pthread_cond_broadcast(&alarm_cond);
 			pthread_mutex_unlock(&alarm_lock);
-			assert(alarm_active == 0);
-			return;
+			assert(alarm_active == (uint8_t) 0);
+			
 		}
 	}
+	return;
 }
 
-void evacuation_message() {
+void evacuation_message(void) {
 	assert(alarm_active);
-	char *evacmessage = "EVACUATE";
-	for (char *p = evacmessage; *p != '\0'; p++) {
-		for (uint8_t i = 0; i < ENTRANCES; i++) {
-			pthread_mutex_lock(&Parking->entrances[i].information_sign.mlock);
-			Parking->entrances[i].information_sign.display = *p;
-			assert(Parking->entrances[i].information_sign.display == *p);
-			pthread_cond_broadcast(&Parking->entrances[i].information_sign.condition);
-			pthread_mutex_unlock(&Parking->entrances[i].information_sign.mlock);
+	const char evacmessage[9] = "EVACUATE";
+	for (uint8_t i = 0; i != (uint8_t) 9; i++) {
+		for (uint8_t j = 0; j < (uint8_t) ENTRANCES; j++) {
+			pthread_mutex_lock(&Parking->entrances[j].information_sign.mlock);
+			Parking->entrances[j].information_sign.display = evacmessage[i];
+			assert(Parking->entrances[j].information_sign.display == (char) evacmessage[i]);
+			pthread_cond_broadcast(&Parking->entrances[j].information_sign.condition);
+			pthread_mutex_unlock(&Parking->entrances[j].information_sign.mlock);
 		}
 		usleep(20000*TIMESCALE);
 	}
 }
 
-void open_all_boom_gates() {
+void open_all_boom_gates(void) {
 	assert(alarm_active);
-	for(uint8_t i = 0; i < ENTRANCES; i++) {
+	for(uint8_t i = 0; i < (uint8_t) ENTRANCES; i++) {
 		pthread_mutex_lock(&Parking->entrances[i].boom_gate.mlock);
 		Parking->entrances[i].boom_gate.status = 'O';
-		assert(Parking->entrances[i].boom_gate.status == 'O');
+		assert(Parking->entrances[i].boom_gate.status == (char) 'O');
 		pthread_cond_broadcast(&Parking->entrances[i].boom_gate.condition);
 		pthread_mutex_unlock(&Parking->entrances[i].boom_gate.mlock);
 	}
-	for(uint8_t i = 0; i < EXITS; i++) {
+	for(uint8_t i = 0; i < (uint8_t) EXITS; i++) {
 		pthread_mutex_lock(&Parking->exits[i].boom_gate.mlock);
 		Parking->exits[i].boom_gate.status = 'O';
-		assert(Parking->exits[i].boom_gate.status == 'O');
+		assert(Parking->exits[i].boom_gate.status == (char) 'O');
 		pthread_cond_broadcast(&Parking->exits[i].boom_gate.condition);
 		pthread_mutex_unlock(&Parking->exits[i].boom_gate.mlock);
 	}
 }
 
 void *temperature_monitor(void *arg) {
-	Level_t *level = (Level_t *)arg;
+	uint8_t level = (uint8_t) (uintptr_t) arg;
+	assert(level < (uint8_t) LEVELS);
 	volatile uint16_t temperatures[MEDIAN_SAMPLES];
 	uint16_t smoothed_temperatures[SMOOTHED_SAMPLES];
-	uint8_t under_samples = SMOOTHED_SAMPLES*MEDIAN_SAMPLES;
+	uint8_t under_samples = (uint8_t) SMOOTHED_SAMPLES * (uint8_t) MEDIAN_SAMPLES;
 	
 	while(!alarm_active) {		
 		// Add temperature to beginning of temperatures array
-		for(uint8_t i = MEDIAN_SAMPLES - 1; i > 0; i--) {
-			temperatures[i] = temperatures[i - 1];
+		for(uint8_t i = MEDIAN_SAMPLES - 1; i > (uint8_t) 0; i--) {
+			temperatures[i] = temperatures[i - (uint8_t) 1];
 		}
-		temperatures[0] = level->temperature;
+		temperatures[0] = Parking->levels[level].temperature;
 		
 		// Add median temp beginning of smoothed_temperatures array
-		for(uint8_t i = SMOOTHED_SAMPLES - 1; i > 0; i--) {
-			smoothed_temperatures[i] = smoothed_temperatures[i - 1];
+		for(uint8_t i = SMOOTHED_SAMPLES - 1; i > (uint8_t) 0; i--) {
+			smoothed_temperatures[i] = smoothed_temperatures[i - (uint8_t) 1];
 		}
 		smoothed_temperatures[0] = median_temperature(temperatures);
 
 		if(!under_samples) {
-			assert(under_samples == 0);
+			assert(under_samples == (uint8_t) 0);
 			pthread_mutex_lock(&alarm_lock);
-			assert(alarm_active == 0);
+			assert(alarm_active == (uint8_t) 0);
 			alarm_active = check_fire(smoothed_temperatures);
 			pthread_cond_broadcast(&alarm_cond);
 			pthread_mutex_unlock(&alarm_lock);
 		} 
 		else {
-			assert(under_samples != 0);
+			assert(under_samples != (uint8_t) 0);
 			under_samples--;
 		}
 
-		print_temperature(smoothed_temperatures[0]);
 		usleep(2000*TIMESCALE);
 	}
 	return NULL;
@@ -178,58 +182,45 @@ void *temperature_monitor(void *arg) {
 
 uint8_t check_fire(uint16_t smoothed_temperatures[SMOOTHED_SAMPLES]) {
 	uint8_t hightemps = 0;
-	for(uint8_t i = 0; i < SMOOTHED_SAMPLES; i++) {
-		if (smoothed_temperatures[i] >= FIRE_THRESHOLD) {
+	uint8_t return_val = 0;
+	for(uint8_t i = 0; i < (uint8_t) SMOOTHED_SAMPLES; i++) {
+		if (smoothed_temperatures[i] >= (uint16_t) FIRE_THRESHOLD) {
 			hightemps++;
 		}
-		else continue;
+		else {
+			continue;
+		}
 	}
 
-	if (hightemps >= SMOOTHED_SAMPLES * 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) {
-		if(hightemps >= SMOOTHED_SAMPLES * 0.9) return 1;
-		else if(smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] >= 8) return 2;
-		else assert(hightemps < SMOOTHED_SAMPLES * 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] < 8);
+	if (hightemps >= (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) >= (uint16_t) 8) {
+		if(hightemps >= (uint8_t) (SMOOTHED_SAMPLES * 0.9)) {
+			return_val = (uint8_t) 1;
+		}
+		else if((smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) >= (uint16_t) 8) {
+			return_val = (uint8_t) 2;
+		}
+		else {
+			assert(hightemps < (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) < (uint16_t) 8);
+		}
 	}
-	else assert(hightemps < SMOOTHED_SAMPLES * 0.9 || smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1] < 8);
-	return 0;
+	else {
+		assert(hightemps < (uint8_t) (SMOOTHED_SAMPLES * 0.9) || (smoothed_temperatures[0] - smoothed_temperatures[SMOOTHED_SAMPLES - 1]) < (uint16_t) 8);
+	}
+	return return_val;
 }
 
 uint16_t median_temperature(volatile uint16_t temperatures[MEDIAN_SAMPLES])
 {
 	uint16_t median = 0;
-	for(uint8_t i = 0; i < MEDIAN_SAMPLES; i++) {
-		assert(temperatures[i] <= MAX_TEMP);
+	for(uint8_t i = 0; i < (uint8_t) MEDIAN_SAMPLES; i++) {
+		assert(temperatures[i] <= (uint16_t) MAX_TEMP);
 		median += temperatures[i];
 	}
-	if(median > 0) {
-		return floor(median / MEDIAN_SAMPLES);
-	}
-	else{
-		assert(median == 0);
-		return 0;
-	}
-}
-
-void print_temperature(uint16_t temperature) {
-	if(temperature <= BASE_TEMP + MAX_TEMP_CHANGE) {
-		printf("\033[42mNORMAL =>\033[0m Temperature: %d\n", temperature);
-	}
-	else if(temperature >= FIRE_THRESHOLD) {
-		printf("\033[41mFIRE   =>\033[0m Temperature: %d\n", temperature);
+	if(median > (uint16_t) 0) {
+		median = median / (uint16_t) MEDIAN_SAMPLES;
 	}
 	else {
-		assert(temperature > BASE_TEMP + MAX_TEMP_CHANGE);
-		assert(temperature < FIRE_THRESHOLD);
-		printf("\033[43mRISING =>\033[0m Temperature: %d\n", temperature);
+		assert(!median);
 	}
-
-	if(alarm_active) {
-		if(alarm_active == 1){
-			printf("\033[45mFIRE DETECTED =>\033[0m Inferno\n");
-		} else if(alarm_active == 2){
-			printf("\033[45mFIRE DETECTED =>\033[0m Explosion\n");
-		} else {
-			assert(alarm_active == 1 || alarm_active == 2);
-		}
-	}
+	return median;
 }

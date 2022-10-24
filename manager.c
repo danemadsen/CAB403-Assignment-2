@@ -62,7 +62,7 @@ for more information.)
 
 int main() {
   // wait until a shared memory segment named PARKING is created
-  if((shm_fd = shm_open(SHM_NAME, O_RDWR, 0666)) == -1) {
+  if((shm_fd = shm_open(SHM_NAME, O_RDWR, SHM_MODE)) == -1) {
     printf("Shared memory segment doesnt exist\n");
     return(1);
   }
