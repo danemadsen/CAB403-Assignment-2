@@ -44,9 +44,9 @@ int main(void)
 
 		alarm_active = false;
 
-		//initialise mutex and condition variables
-		pthread_mutex_init(&alarm_lock, NULL);
-		pthread_cond_init(&alarm_cond, NULL);
+		//initialise semaphores
+		sem_init(&alarm_sem, 1, 0);
+		
 
 		pthread_t level_threads[LEVELS];
 		for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
@@ -55,17 +55,14 @@ int main(void)
 		}
 
 		while(!alarm_active) {
-			pthread_mutex_lock(&alarm_lock);
-			pthread_cond_wait(&alarm_cond, &alarm_lock);
-			pthread_mutex_unlock(&alarm_lock);
+			sem_wait(&alarm_sem);
 		}
 		assert(alarm_active);
 		emergency_mode();
 		for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
 			pthread_join(level_threads[i], NULL);
 		}
-		pthread_mutex_destroy(&alarm_lock);
-		pthread_cond_destroy(&alarm_cond);
+		sem_destroy(&alarm_sem);
   	}
 	else {
 		assert(shm_fd != -1);
@@ -99,12 +96,8 @@ void check_alarm(void) {
 	assert(alarm_active);
 	for (uint8_t i = 0; i < (uint8_t) LEVELS; i++) {
 		if (Parking->levels[i].alarm == (uint8_t) 0) {
-			pthread_mutex_lock(&alarm_lock);
 			alarm_active = false;
-			pthread_cond_broadcast(&alarm_cond);
-			pthread_mutex_unlock(&alarm_lock);
 			assert(!alarm_active);
-			
 		}
 	}
 	return;
@@ -165,11 +158,11 @@ void *temperature_monitor(void *arg) {
 
 		if(!under_samples) {
 			assert(under_samples == (uint8_t) 0);
-			pthread_mutex_lock(&alarm_lock);
 			assert(!alarm_active);
 			alarm_active = check_fire(smoothed_temperatures);
-			pthread_cond_broadcast(&alarm_cond);
-			pthread_mutex_unlock(&alarm_lock);
+			if(alarm_active) {
+				sem_post(&alarm_sem);
+			}
 		} 
 		else {
 			assert(under_samples != (uint8_t) 0);

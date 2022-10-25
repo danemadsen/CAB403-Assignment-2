@@ -36,11 +36,11 @@ and display an evacuation message on the information signs
 #include <stdint.h>
 #include <assert.h>
 #include <math.h>
+#include <semaphore.h>
 #include "common.h"
 
 static bool alarm_active;
-static pthread_mutex_t alarm_lock;
-static pthread_cond_t alarm_cond;
+static sem_t alarm_sem;
 
 void emergency_mode(void);
 void check_alarm(void);
