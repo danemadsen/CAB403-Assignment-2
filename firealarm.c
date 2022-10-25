@@ -121,7 +121,7 @@ void evacuation_message(void) {
 			pthread_cond_broadcast(&Parking->entrances[j].information_sign.condition);
 			pthread_mutex_unlock(&Parking->entrances[j].information_sign.mlock);
 		}
-		usleep(20000*TIMESCALE);
+		usleep((useconds_t) 20000 * (useconds_t) TIMESCALE);
 	}
 }
 
@@ -176,7 +176,7 @@ void *temperature_monitor(void *arg) {
 			under_samples--;
 		}
 
-		usleep(2000*TIMESCALE);
+		usleep((useconds_t) 2000 * (useconds_t) TIMESCALE);
 	}
 	return NULL;
 }
