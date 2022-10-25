@@ -410,22 +410,24 @@ void *exit_loop(void *arg) {
 void display_loop() {
   while(1) {
     system("clear");
-    printf("████████████████████████████████████████████████████████████████████████\n"
-           "█                              PARKING LOT                             █\n"
-           "████████████████████████████████████████████████████████████████████████\n"
-           "█       Index        |    1    |    2    |    3    |    4    |    5    █\n"
-           "█----------------------------------------------------------------------█\n"
-           "█ Entrance Boom Gate |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
-           "█----------------------------------------------------------------------█\n"
-           "█   Exit Boom Gate   |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
-           "█----------------------------------------------------------------------█\n"
-           "█   Entrance Sign    |    %c    |    %c    |    %c    |    %c    |    %c    █\n"
-           "████████████████████████████████████████████████████████████████████████\n\n"
-           "Level 1 Count: %d\n"
-           "Level 2 Count: %d\n"
-           "Level 3 Count: %d\n"
-           "Level 4 Count: %d\n"
-           "Level 5 Count: %d\n\n"           
+    printf("█████████████████████████████████████████████████████████████████████████████\n"
+           "█                                 PARKING LOT                               █\n"
+           "█████████████████████████████████████████████████████████████████████████████\n"
+           "█       Index        |     1    |     2    |     3    |     4    |     5    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█ Entrance Boom Gate |    %2c    |    %2c    |    %2c    |    %2c    |    %2c    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█   Exit Boom Gate   |    %2c    |    %2c    |    %2c    |    %2c    |    %2c    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█   Entrance Sign    |    %2c    |    %2c    |    %2c    |    %2c    |    %2c    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█     Level Count    |    %2d    |    %2d    |    %2d    |    %2d    |    %2d    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█  Level Temperature |    %2d    |    %2d    |    %2d    |    %2d    |    %2d    █\n"
+           "█---------------------------------------------------------------------------█\n"
+           "█   Level Capacity   |    %2d    |    %2d    |    %2d    |    %2d    |    %2d    █\n"
+           "█████████████████████████████████████████████████████████████████████████████\n\n"         
+           "Maximum Capacity: %d\n"
            "Current Revenue: %0.01f\n",
            get_boom_gate_status(&Parking->entrances[0].boom_gate),
            get_boom_gate_status(&Parking->entrances[1].boom_gate),
@@ -447,7 +449,18 @@ void display_loop() {
            get_level_count(2),
            get_level_count(3),
            get_level_count(4),
+           Parking->levels[0].temperature,
+           Parking->levels[1].temperature,
+           Parking->levels[2].temperature,
+           Parking->levels[3].temperature,
+           Parking->levels[4].temperature,
+           LEVEL_CAPACITY,
+           LEVEL_CAPACITY,
+           LEVEL_CAPACITY,
+           LEVEL_CAPACITY,
+           LEVEL_CAPACITY,
+           LEVELS*LEVEL_CAPACITY,
            revenue);
-    usleep(10000);
+    usleep(10000); // Display doesnt need to be timescaled
   }
 };
