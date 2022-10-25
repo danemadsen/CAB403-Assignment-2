@@ -1,23 +1,23 @@
-all: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 
-	gcc -Wall -Wextra -Werror -lrt -pthread -o  manager manager.c -s
-	gcc -Wall -Wextra -Werror -lrt -pthread -o simulator simulator.c -s
-	gcc -Wall -Wextra -Werror -lrt -pthread -Wpedantic -o firealarm firealarm.c -s
-	gcc -Wall -Wextra -Werror -lrt -pthread -o launcher launcher.c -s
+all: src/manager.c src/manager.h src/simulator.c src/simulator.h src/firealarm.c src/firealarm.h src/launcher.c src/common.h 
+	gcc -Wall -Wextra -Werror -lrt -pthread -o  build/manager src/manager.c -s
+	gcc -Wall -Wextra -Werror -lrt -pthread -o build/simulator src/simulator.c -s
+	gcc -Wall -Wextra -Werror -lrt -pthread -Wpedantic -o build/firealarm src/firealarm.c -s
+	gcc -Wall -Wextra -Werror -lrt -pthread -o build/launcher src/launcher.c -s
 
-debug: manager.c manager.h simulator.c simulator.h firealarm.c firealarm.h launcher.c common.h 
-	gcc -lrt -pthread -o manager manager.c -g
-	gcc -lrt -pthread -o simulator simulator.c -g
-	gcc -lrt -pthread -o firealarm firealarm.c -g
-	gcc -lrt -pthread -o launcher launcher.c -g
+debug: src/manager.c src/manager.h src/simulator.c src/simulator.h src/firealarm.c src/firealarm.h src/launcher.c src/common.h
+	gcc -lrt -pthread -o build/manager src/manager.c -g
+	gcc -lrt -pthread -o build/simulator src/simulator.c -g
+	gcc -lrt -pthread -o build/firealarm src/firealarm.c -g
+	gcc -lrt -pthread -o build/launcher src/launcher.c -g
 
-manager: manager.c manager.h common.h
-	gcc -Wall -Wextra -Werror -lrt -pthread -o  manager manager.c -s
+manager: src/manager.c src/manager.h src/common.h
+	gcc -Wall -Wextra -Werror -lrt -pthread -o  build/manager src/manager.c -s
 
-simulator: simulator.c simulator.h common.h
-	gcc -Wall -Wextra -Werror -lrt -pthread -o simulator simulator.c -s
+simulator: src/simulator.c src/simulator.h src/common.h
+	gcc -Wall -Wextra -Werror -lrt -pthread -o build/simulator src/simulator.c -s
 
-firealarm: firealarm.c firealarm.h common.h
-	gcc -Wall -Wextra -Werror -lrt -pthread -Wpedantic -o firealarm firealarm.c -s
+firealarm: src/firealarm.c src/firealarm.h src/common.h
+	gcc -Wall -Wextra -Werror -lrt -pthread -Wpedantic -o build/firealarm src/firealarm.c -s
 
-launcher: launcher.c
-	gcc -Wall -Wextra -Werror -lrt -pthread -o launcher launcher.c -s
+launcher: src/launcher.c
+	gcc -Wall -Wextra -Werror -lrt -pthread -o build/launcher src/launcher.c -s
